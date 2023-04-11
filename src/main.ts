@@ -1,10 +1,42 @@
-import {getInput, setFailed, summary} from '@actions/core';
+import {addPath, debug, getInput, setFailed, summary} from '@actions/core';
 import {ExecOptions, exec} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
-import {cacheFile, downloadTool, extractTar} from '@actions/tool-cache';
+import {which} from '@actions/io';
+import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
 import {Grammar, Parser} from 'nearley';
-import path from 'path';
 import grammar from './grammar';
+
+async function downloadRelease(version: string): Promise<string> {
+  // Download
+  const downloadUrl = `https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-x86_64-unknown-linux-gnu.tar.gz`;
+  let downloadPath: string | null = null;
+  try {
+    downloadPath = await downloadTool(downloadUrl);
+  } catch (error) {
+    debug(error as string);
+    throw new Error(`Failed to download version v${version}: ${error}`);
+  }
+
+  // Extract
+  const extPath = await extractTar(downloadPath);
+
+  // Install into the local tool cache - node extracts with a root folder that matches the fileName downloaded
+  return await cacheDir(extPath, 'zola', version);
+}
+
+async function getZolaCli(version: string): Promise<void> {
+  // look if the binary is cached
+  let toolPath: string;
+  toolPath = find('zola', version);
+
+  // if not: download, extract and cache
+  if (!toolPath) {
+    toolPath = await downloadRelease(version);
+    debug(`Zola cached under ${toolPath}`);
+  }
+
+  addPath(toolPath);
+}
 
 async function run(): Promise<void> {
   let dataString = '';
@@ -19,19 +51,12 @@ async function run(): Promise<void> {
   };
 
   // Download zola
-  const zolaDownload = await downloadTool(
-    'https://github.com/getzola/zola/releases/download/v0.17.2/zola-v0.17.2-x86_64-unknown-linux-gnu.tar.gz'
-  );
-  const zolaExtractedFolder = await extractTar(zolaDownload, '/usr/local/bin');
-  const cachedPath = await cacheFile(
-    path.join(zolaExtractedFolder, 'zola'),
-    'zola',
-    'zola',
-    '0.17.2'
-  );
+  await getZolaCli('0.17.2');
+
+  const zolaPath: string = await which('zola', true);
   const startTime = new Date();
 
-  await exec(`${cachedPath}`, ['check'], options);
+  await exec(`${zolaPath}`, ['check'], options);
 
   try {
     parser.feed(dataString);

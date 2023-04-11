@@ -79,10 +79,41 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core_1 = __nccwpck_require__(2186);
 const exec_1 = __nccwpck_require__(1514);
 const github_1 = __nccwpck_require__(5438);
+const io_1 = __nccwpck_require__(7436);
 const tool_cache_1 = __nccwpck_require__(7784);
 const nearley_1 = __nccwpck_require__(7800);
-const path_1 = __importDefault(__nccwpck_require__(1017));
 const grammar_1 = __importDefault(__nccwpck_require__(275));
+function downloadRelease(version) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Download
+        const downloadUrl = `https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-x86_64-unknown-linux-gnu.tar.gz`;
+        let downloadPath = null;
+        try {
+            downloadPath = yield (0, tool_cache_1.downloadTool)(downloadUrl);
+        }
+        catch (error) {
+            (0, core_1.debug)(error);
+            throw new Error(`Failed to download version v${version}: ${error}`);
+        }
+        // Extract
+        const extPath = yield (0, tool_cache_1.extractTar)(downloadPath);
+        // Install into the local tool cache - node extracts with a root folder that matches the fileName downloaded
+        return yield (0, tool_cache_1.cacheDir)(extPath, 'zola', version);
+    });
+}
+function getZolaCli(version) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // look if the binary is cached
+        let toolPath;
+        toolPath = (0, tool_cache_1.find)('zola', version);
+        // if not: download, extract and cache
+        if (!toolPath) {
+            toolPath = yield downloadRelease(version);
+            (0, core_1.debug)(`Zola cached under ${toolPath}`);
+        }
+        (0, core_1.addPath)(toolPath);
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         let dataString = '';
@@ -96,11 +127,10 @@ function run() {
             }
         };
         // Download zola
-        const zolaDownload = yield (0, tool_cache_1.downloadTool)('https://github.com/getzola/zola/releases/download/v0.17.2/zola-v0.17.2-x86_64-unknown-linux-gnu.tar.gz');
-        const zolaExtractedFolder = yield (0, tool_cache_1.extractTar)(zolaDownload, '/usr/local/bin');
-        const cachedPath = yield (0, tool_cache_1.cacheFile)(path_1.default.join(zolaExtractedFolder, 'zola'), 'zola', 'zola', '0.17.2');
+        yield getZolaCli('0.17.2');
+        const zolaPath = yield (0, io_1.which)('zola', true);
         const startTime = new Date();
-        yield (0, exec_1.exec)(`${cachedPath}`, ['check'], options);
+        yield (0, exec_1.exec)(`${zolaPath}`, ['check'], options);
         try {
             parser.feed(dataString);
         }
