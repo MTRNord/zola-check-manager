@@ -1,8 +1,9 @@
 import {getInput, setFailed, summary} from '@actions/core';
 import {ExecOptions, exec} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
-import {which} from '@actions/io';
+import {cacheFile, downloadTool, extractTar} from '@actions/tool-cache';
 import {Grammar, Parser} from 'nearley';
+import path from 'path';
 import grammar from './grammar';
 
 async function run(): Promise<void> {
@@ -17,10 +18,20 @@ async function run(): Promise<void> {
     }
   };
 
-  const zolaPath: string = await which('zola', true);
+  // Download zola
+  const zolaDownload = await downloadTool(
+    'https://github.com/getzola/zola/releases/download/v0.17.2/zola-v0.17.2-x86_64-unknown-linux-gnu.tar.gz'
+  );
+  const zolaExtractedFolder = await extractTar(zolaDownload, '/usr/local/bin');
+  const cachedPath = await cacheFile(
+    path.join(zolaExtractedFolder, 'zola'),
+    'zola',
+    'zola',
+    '0.17.2'
+  );
   const startTime = new Date();
 
-  await exec(`${zolaPath}`, ['check'], options);
+  await exec(`${cachedPath}`, ['check'], options);
 
   try {
     parser.feed(dataString);
