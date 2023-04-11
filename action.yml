@@ -16,7 +16,7 @@ inputs:
     default: "warning"
   repo-token:
     required: false
-    description: "The github token to use. Usually this is `${{ secrets.GITHUB_TOKEN }}`"
+    description: "The github token to use. Usually this is `secrets.GITHUB_TOKEN` if not defined"
     default: ${{ github.token }}
 runs:
   using: "node16"
