@@ -144,10 +144,7 @@ async function run(): Promise<void> {
     }
   }
 
-  const token = getInput('repo-token', {required: true});
-  if (token === '') {
-    setFailed('Missing `repo-token`');
-  }
+  const token = getInput('repo-token');
   const octokit = getOctokit(token);
 
   // call octokit to create a check with annotation and details

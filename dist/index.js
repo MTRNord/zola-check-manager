@@ -24706,10 +24706,7 @@ function run() {
                 });
             }
         }
-        const token = (0,core.getInput)('repo-token', { required: true });
-        if (token === '') {
-            (0,core.setFailed)('Missing `repo-token`');
-        }
+        const token = (0,core.getInput)('repo-token');
         const octokit = (0,github.getOctokit)(token);
         // call octokit to create a check with annotation and details
         yield octokit.rest.checks.create({
