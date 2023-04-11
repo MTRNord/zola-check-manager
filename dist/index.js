@@ -24836,7 +24836,7 @@ function run() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['skipped'] || '0';
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const errorCount = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['errors'];
+            const errorCount = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_checked'))[0]['external_links_checked']['errors'];
             core.summary.addHeading('Zola check results')
                 .addTable([
                 [
