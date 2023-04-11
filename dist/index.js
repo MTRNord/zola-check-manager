@@ -24643,7 +24643,7 @@ function getZolaCli(version) {
     });
 }
 function run() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {
         // __dirname does not exist in esm world so we fake it the esm way. Nodejs approves.
         const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
@@ -24694,13 +24694,20 @@ function run() {
                         message = `${message}\nWayback Machine Link is available: ${waybackResponse.archived_snapshots.closest.url}`;
                     }
                 }
+                (0,core.error)(message, {
+                    title: 'Link is not reachable',
+                    file: `/${external_path_.relative(__dirname, (_d = result.file) !== null && _d !== void 0 ? _d : '')}`,
+                    startLine: index,
+                    startColumn: startingPositionOfUrl,
+                    endColumn: startingPositionOfUrl + ((_e = result.url) !== null && _e !== void 0 ? _e : '').length
+                });
                 annotations.push({
                     // This is a little awkward but does the job
-                    path: `/${external_path_.relative(__dirname, (_d = result.file) !== null && _d !== void 0 ? _d : '')}`,
+                    path: `/${external_path_.relative(__dirname, (_f = result.file) !== null && _f !== void 0 ? _f : '')}`,
                     start_line: index,
                     end_line: index,
                     start_column: startingPositionOfUrl,
-                    end_column: startingPositionOfUrl + ((_e = result.url) !== null && _e !== void 0 ? _e : '').length,
+                    end_column: startingPositionOfUrl + ((_g = result.url) !== null && _g !== void 0 ? _g : '').length,
                     annotation_level: (0,core.getInput)('annotation_level'),
                     message
                 });

@@ -1,4 +1,11 @@
-import {addPath, debug, getInput, setFailed, summary} from '@actions/core';
+import {
+  addPath,
+  debug,
+  error,
+  getInput,
+  setFailed,
+  summary
+} from '@actions/core';
 import {ExecOptions, exec} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
 import {which} from '@actions/io';
@@ -130,6 +137,14 @@ async function run(): Promise<void> {
           message = `${message}\nWayback Machine Link is available: ${waybackResponse.archived_snapshots.closest.url}`;
         }
       }
+
+      error(message, {
+        title: 'Link is not reachable',
+        file: `/${path.relative(__dirname, result.file ?? '')}`,
+        startLine: index,
+        startColumn: startingPositionOfUrl,
+        endColumn: startingPositionOfUrl + (result.url ?? '').length
+      });
 
       annotations.push({
         // This is a little awkward but does the job
