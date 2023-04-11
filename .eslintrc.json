@@ -1,8 +1,22 @@
 {
   "plugins": [
     "jest",
-    "@typescript-eslint"
+    "@typescript-eslint",
+    "import"
   ],
+  "settings": {
+    "import/parsers": {
+      "@typescript-eslint/parser": [
+        ".ts",
+        ".tsx"
+      ]
+    },
+    "import/resolver": {
+      "typescript": {
+        "alwaysTryTypes": true
+      }
+    }
+  },
   "extends": [
     "plugin:github/recommended"
   ],

@@ -6,7 +6,20 @@ import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
 import {readFile} from 'fs/promises';
 import {Grammar, Parser} from 'nearley';
 import path from 'path';
-import grammar from './grammar';
+import grammar from './grammar.js';
+// eslint-disable-next-line import/no-named-as-default -- False positive
+import got from 'got';
+
+interface WaybackResponse {
+  archived_snapshots: {
+    closest?: {
+      available: boolean;
+      url: string;
+      timestamp: string;
+      status: string;
+    };
+  };
+}
 
 async function downloadRelease(version: string): Promise<string> {
   // Download
@@ -99,6 +112,21 @@ async function run(): Promise<void> {
 
       const startingPositionOfUrl = line.indexOf(result.url ?? '');
 
+      let message = `Zola Error Message: ${result.error_message}`;
+
+      // Check if we have a webarchive link
+      const waybackResponse = await got
+        .get(`http://archive.org/wayback/available?url=${result.url ?? ''}`)
+        .json<WaybackResponse>();
+      if (waybackResponse.archived_snapshots !== null) {
+        if (
+          waybackResponse.archived_snapshots.closest?.available &&
+          waybackResponse.archived_snapshots.closest.status === '200'
+        ) {
+          message = `${message}\nWayback Machine Link is available: ${waybackResponse.archived_snapshots.closest.url}`;
+        }
+      }
+
       annotations.push({
         // This is a little awkward but does the job
         path: `/${path.relative(__dirname, result.file ?? '')}`,
@@ -107,9 +135,7 @@ async function run(): Promise<void> {
         start_column: startingPositionOfUrl,
         end_column: startingPositionOfUrl + (result.url ?? '').length,
         annotation_level: getInput('annotation_level'),
-        // TODO: Mention if webarchive is available
-        // TODO: Format message
-        message: result.error_message
+        message
       });
     }
   }
