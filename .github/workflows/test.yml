@@ -22,3 +22,4 @@ jobs:
       - uses: ./
         with:
           working_directory: ./test_page
+          repo-token: ${{ secrets.GITHUB_TOKEN }}

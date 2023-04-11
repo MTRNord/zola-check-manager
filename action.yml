@@ -14,6 +14,9 @@ inputs:
     required: false
     description: "The level of the annotation. Can be one of `notice`, `failure`, `warning`"
     default: "warning"
+  repo-token:
+    required: true
+    description: "The github token to use. Usually this is `{{ secrets.GITHUB_TOKEN }}`"
 runs:
   using: "node16"
   main: "dist/index.js"
