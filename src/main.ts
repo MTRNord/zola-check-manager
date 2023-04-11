@@ -1,9 +1,10 @@
 import {
   addPath,
   debug,
-  error as printError,
+  endGroup,
   getInput,
   setFailed,
+  startGroup,
   summary
 } from '@actions/core';
 import {ExecOptions, exec} from '@actions/exec';
@@ -102,6 +103,7 @@ async function run(): Promise<void> {
     message: string;
   }[] = [];
 
+  startGroup('Zola Check results');
   for (const rawResult of parser.results[0]) {
     const result = rawResult as {
       error_message: string;
@@ -142,14 +144,6 @@ async function run(): Promise<void> {
         }
       }
 
-      printError(message, {
-        title: 'Link is not reachable',
-        file: `/${path.relative(__dirname, result.file ?? '')}`,
-        startLine: index,
-        startColumn: startingPositionOfUrl,
-        endColumn: startingPositionOfUrl + (result.url ?? '').length
-      });
-
       annotations.push({
         // This is a little awkward but does the job
         path: `/${path.relative(__dirname, result.file ?? '')}`,
@@ -162,6 +156,7 @@ async function run(): Promise<void> {
       });
     }
   }
+  endGroup();
 
   const token = getInput('repo-token');
   const octokit = getOctokit(token);
