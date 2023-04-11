@@ -18742,7 +18742,7 @@ const grammar = {
     ParserRules: [
         { "name": "stdOutInput", "symbols": ["stdOutRow"], "postprocess": id },
         { "name": "stdOutInput", "symbols": ["stdOutInput", (lexer.has("newline") ? { type: "newline" } : newline), "stdOutRow"], "postprocess": appendItem(0, 2) },
-        { "name": "stdOutInput", "symbols": ["input"] },
+        { "name": "stdOutInput", "symbols": ["input"], "postprocess": id },
         { "name": "stdOutRow", "symbols": ["metaMessage"], "postprocess": empty },
         { "name": "stdOutRow", "symbols": ["successReport"], "postprocess": function (data) {
                 return {
@@ -24749,7 +24749,6 @@ function run() {
             (0,core.setFailed)(`Error at character ${parseError.offset}`);
         }
         const annotations = [];
-        (0,core.startGroup)('Zola Check results');
         for (const rawResult of parser.results[0]) {
             const result = rawResult;
             if (!result.hasOwnProperty('file')) {
@@ -24788,25 +24787,27 @@ function run() {
                 });
             }
         }
-        (0,core.endGroup)();
-        const token = (0,core.getInput)('repo-token');
-        const octokit = (0,github.getOctokit)(token);
-        // call octokit to create a check with annotation and details
-        yield octokit.rest.checks.create({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            name: 'Zola Check',
-            head_sha: github.context.sha,
-            started_at: startTime.toISOString(),
-            completed_at: new Date().toISOString(),
-            status: 'completed',
-            conclusion: (0,core.getInput)('conclusion_level'),
-            output: {
-                title: 'Link is not reachable',
-                summary: 'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
-                annotations
-            }
-        });
+        // Only create result if there is anything to report
+        if (annotations.length > 0) {
+            const token = (0,core.getInput)('repo-token');
+            const octokit = (0,github.getOctokit)(token);
+            // call octokit to create a check with annotation and details
+            yield octokit.rest.checks.create({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                name: 'Zola Check',
+                head_sha: github.context.sha,
+                started_at: startTime.toISOString(),
+                completed_at: new Date().toISOString(),
+                status: 'completed',
+                conclusion: (0,core.getInput)('conclusion_level'),
+                output: {
+                    title: 'Link is not reachable',
+                    summary: 'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
+                    annotations
+                }
+            });
+        }
         // Write summary
         const stdoutParser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));
         stdoutParser.feed(infoString);

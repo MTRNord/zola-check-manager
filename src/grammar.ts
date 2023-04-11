@@ -98,7 +98,7 @@ const grammar: Grammar = {
       ],
       postprocess: appendItem(0, 2)
     },
-    {name: 'stdOutInput', symbols: ['input']},
+    {name: 'stdOutInput', symbols: ['input'], postprocess: id},
     {name: 'stdOutRow', symbols: ['metaMessage'], postprocess: empty},
     {
       name: 'stdOutRow',

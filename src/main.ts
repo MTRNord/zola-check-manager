@@ -107,7 +107,6 @@ async function run(): Promise<void> {
     message: string;
   }[] = [];
 
-  startGroup('Zola Check results');
   for (const rawResult of parser.results[0]) {
     const result = rawResult as {
       error_message: string;
@@ -160,28 +159,30 @@ async function run(): Promise<void> {
       });
     }
   }
-  endGroup();
 
-  const token = getInput('repo-token');
-  const octokit = getOctokit(token);
+  // Only create result if there is anything to report
+  if (annotations.length > 0) {
+    const token = getInput('repo-token');
+    const octokit = getOctokit(token);
 
-  // call octokit to create a check with annotation and details
-  await octokit.rest.checks.create({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    name: 'Zola Check',
-    head_sha: context.sha,
-    started_at: startTime.toISOString(),
-    completed_at: new Date().toISOString(),
-    status: 'completed',
-    conclusion: getInput('conclusion_level'),
-    output: {
-      title: 'Link is not reachable',
-      summary:
-        'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
-      annotations
-    }
-  });
+    // call octokit to create a check with annotation and details
+    await octokit.rest.checks.create({
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      name: 'Zola Check',
+      head_sha: context.sha,
+      started_at: startTime.toISOString(),
+      completed_at: new Date().toISOString(),
+      status: 'completed',
+      conclusion: getInput('conclusion_level'),
+      output: {
+        title: 'Link is not reachable',
+        summary:
+          'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
+        annotations
+      }
+    });
+  }
 
   // Write summary
   const stdoutParser: Parser = new Parser(Grammar.fromCompiled(grammar));

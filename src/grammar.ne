@@ -28,7 +28,7 @@ const lexer = compile({
 # Meta info is in stdOut
 stdOutInput -> stdOutRow {% id %}
              | stdOutInput %newline stdOutRow {% appendItem(0,2) %}
-             | input
+             | input {% id %}
 
 stdOutRow -> metaMessage {% empty %}
            | successReport {%
