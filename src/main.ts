@@ -63,6 +63,7 @@ async function run(): Promise<void> {
   const parser: Parser = new Parser(Grammar.fromCompiled(grammar));
   const options: ExecOptions = {
     cwd: path.join(__dirname, working_directory),
+    ignoreReturnCode: true,
     listeners: {
       stderr: (data: Buffer) => {
         dataString += data.toString();

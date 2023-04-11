@@ -24652,6 +24652,7 @@ function run() {
         const parser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));
         const options = {
             cwd: external_path_.join(__dirname, working_directory),
+            ignoreReturnCode: true,
             listeners: {
                 stderr: (data) => {
                     dataString += data.toString();
