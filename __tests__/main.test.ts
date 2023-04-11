@@ -1,29 +1,14 @@
-import {wait} from '../src/wait'
-import * as process from 'process'
-import * as cp from 'child_process'
-import * as path from 'path'
-import {expect, test} from '@jest/globals'
+import {expect, test} from '@jest/globals';
+import {readFile, writeFile} from 'fs/promises';
 
-test('throws invalid number', async () => {
-  const input = parseInt('foo', 10)
-  await expect(wait(input)).rejects.toThrow('milliseconds not a number')
-})
+import {Grammar, Parser} from 'nearley';
+import grammar from '../src/grammar';
 
-test('wait 500 ms', async () => {
-  const start = new Date()
-  await wait(500)
-  const end = new Date()
-  var delta = Math.abs(end.getTime() - start.getTime())
-  expect(delta).toBeGreaterThan(450)
-})
-
-// shows how the runner will run a javascript action with env / stdout protocol
-test('test runs', () => {
-  process.env['INPUT_MILLISECONDS'] = '500'
-  const np = process.execPath
-  const ip = path.join(__dirname, '..', 'lib', 'main.js')
-  const options: cp.ExecFileSyncOptions = {
-    env: process.env
-  }
-  console.log(cp.execFileSync(np, [ip], options).toString())
-})
+test('test parsing', async () => {
+  // FIXME: Use path.join
+  const data: string = await readFile(__dirname + '/test_data.txt', 'utf8');
+  let parser: Parser = new Parser(Grammar.fromCompiled(grammar));
+  parser.feed(data);
+  await writeFile(__dirname + '/parsed.json', JSON.stringify(parser.results));
+  //expect(delta).toBeGreaterThan(450)
+});

@@ -1,19 +1,90 @@
-import * as core from '@actions/core'
-import {wait} from './wait'
+import {getInput, setFailed, summary} from '@actions/core';
+import {ExecOptions, exec} from '@actions/exec';
+import {getOctokit, context} from '@actions/github';
+import {which} from '@actions/io';
+import {Grammar, Parser} from 'nearley';
+import grammar from './grammar';
 
 async function run(): Promise<void> {
+  let dataString = '';
+  const parser: Parser = new Parser(Grammar.fromCompiled(grammar));
+  const options: ExecOptions = {
+    cwd: './lib',
+    listeners: {
+      stderr: (data: Buffer) => {
+        dataString += data.toString();
+      }
+    }
+  };
+
+  const zolaPath: string = await which('zola', true);
+  const startTime = new Date();
+
+  await exec(`${zolaPath}`, ['check'], options);
+
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
-
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
-
-    core.setOutput('time', new Date().toTimeString())
-  } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
+    parser.feed(dataString);
+  } catch (parseError: unknown) {
+    setFailed(`Error at character ${(parseError as {offset: string}).offset}`);
   }
+
+  // TODO: Use results: parser.results
+
+  // TODO: Hook to github roughly like this:
+
+  const token = getInput('repo-token');
+  const octokit = getOctokit(token);
+
+  // call octokit to create a check with annotation and details
+  await octokit.rest.checks.create({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    name: 'Zola Check',
+    head_sha: context.sha,
+    started_at: startTime.toISOString(),
+    completed_at: new Date().toISOString(),
+    status: 'completed',
+    // TODO: Allow changing how bad this is
+    conclusion: 'action_required',
+    output: {
+      title: 'Link is not reachable',
+      summary:
+        'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
+      annotations: [
+        {
+          // TODO: Use file from json
+          path: 'README.md',
+          // TODO: Parse files to find the correct links within a file
+          start_line: 1,
+          end_line: 1,
+          start_column: 1,
+          end_column: 1,
+          // TODO: Allow changing how bad this is
+          annotation_level: 'warning',
+          // TODO: Use error message
+          message: 'README.md must start with a header'
+        }
+      ]
+    }
+  });
+
+  // Write summary
+  const totalInternal = '1000';
+  const totalExternal = '1000';
+  const errorCount = '100';
+  summary
+    .addHeading('Zola check results')
+    // TODO: Get stats from zola stdOut
+    .addTable([
+      [
+        {data: 'Link Type', header: true},
+        {data: 'Total', header: true},
+        {data: 'Result', header: true}
+      ],
+      ['Internal', totalInternal, 'Pass ✅'],
+      ['External', totalExternal, `Fail (${errorCount} error(s) found) ❌`]
+    ])
+    .write();
 }
 
-run()
+run();

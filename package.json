@@ -5,12 +5,14 @@
   "description": "TypeScript template action",
   "main": "lib/main.js",
   "scripts": {
-    "build": "tsc",
+    "build-grammar": "nearleyc src/grammar.ne -o src/grammar.ts",
+    "grammar-railroad": "nearley-railroad src/grammar.ne -o src/grammar.html",
+    "build": "npm run build-grammar && tsc",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map --license licenses.txt",
-    "test": "jest",
+    "test": "npm run build-grammar && jest",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "repository": {
@@ -25,9 +27,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.10.0"
+    "@actions/core": "^1.10.0",
+    "@actions/exec": "^1.1.1",
+    "@actions/github": "^5.1.1",
+    "@actions/io": "^1.1.3",
+    "moo": "^0.5.2",
+    "nearley": "^2.20.1"
   },
   "devDependencies": {
+    "@types/moo": "^0.5.5",
+    "@types/nearley": "^2.11.2",
     "@types/node": "^18.15.0",
     "@typescript-eslint/parser": "^5.57.1",
     "@vercel/ncc": "^0.36.1",
