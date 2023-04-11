@@ -24812,9 +24812,9 @@ function run() {
         stdoutParser.feed(infoString);
         if (
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('successReport')).length > 0) {
+        stdoutParser.results[0].filter((result) => result.hasOwnProperty('successReport')).length > 0) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalExternal = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
+            const totalExternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
             core.summary.addHeading('Zola check results')
                 .addTable([
                 [
@@ -24829,14 +24829,14 @@ function run() {
         }
         else {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalInternal = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('internal_links'))[0]['internal_links']['total'];
+            const totalInternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('internal_links'))[0]['internal_links']['total'];
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalExternal = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
+            const totalExternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
             const skippedExternal = 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['skipped'] || '0';
+            stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['skipped'] || '0';
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const errorCount = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['errors'];
+            const errorCount = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['errors'];
             core.summary.addHeading('Zola check results')
                 .addTable([
                 [

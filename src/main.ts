@@ -190,12 +190,12 @@ async function run(): Promise<void> {
   if (
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     stdoutParser.results[0].filter((result: any) =>
-      result[0].hasOwnProperty('successReport')
+      result.hasOwnProperty('successReport')
     ).length > 0
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totalExternal = stdoutParser.results[0].filter((result: any) =>
-      result[0].hasOwnProperty('external_links_planed_checking')
+      result.hasOwnProperty('external_links_planed_checking')
     )[0]['external_links_planed_checking']['total'];
     summary
       .addHeading('Zola check results')
@@ -212,20 +212,20 @@ async function run(): Promise<void> {
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totalInternal = stdoutParser.results[0].filter((result: any) =>
-      result[0].hasOwnProperty('internal_links')
+      result.hasOwnProperty('internal_links')
     )[0]['internal_links']['total'];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totalExternal = stdoutParser.results[0].filter((result: any) =>
-      result[0].hasOwnProperty('external_links_planed_checking')
+      result.hasOwnProperty('external_links_planed_checking')
     )[0]['external_links_planed_checking']['total'];
     const skippedExternal =
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       stdoutParser.results[0].filter((result: any) =>
-        result[0].hasOwnProperty('external_links_planed_checking')
+        result.hasOwnProperty('external_links_planed_checking')
       )[0]['external_links_planed_checking']['skipped'] || '0';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const errorCount = stdoutParser.results[0].filter((result: any) =>
-      result[0].hasOwnProperty('external_links_planed_checking')
+      result.hasOwnProperty('external_links_planed_checking')
     )[0]['external_links_planed_checking']['errors'];
     summary
       .addHeading('Zola check results')
