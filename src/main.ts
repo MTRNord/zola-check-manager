@@ -1,10 +1,10 @@
-import { addPath, debug, getInput, setFailed, summary } from '@actions/core';
-import { ExecOptions, exec } from '@actions/exec';
-import { getOctokit, context } from '@actions/github';
-import { which } from '@actions/io';
-import { cacheDir, downloadTool, extractTar, find } from '@actions/tool-cache';
-import { readFile } from 'fs/promises';
-import { Grammar, Parser } from 'nearley';
+import {addPath, debug, getInput, setFailed, summary} from '@actions/core';
+import {ExecOptions, exec} from '@actions/exec';
+import {getOctokit, context} from '@actions/github';
+import {which} from '@actions/io';
+import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
+import {readFile} from 'fs/promises';
+import {Grammar, Parser} from 'nearley';
 import path from 'path';
 import grammar from './grammar.js';
 // eslint-disable-next-line import/no-named-as-default -- False positive
@@ -82,7 +82,7 @@ async function run(): Promise<void> {
   try {
     parser.feed(dataString);
   } catch (parseError: unknown) {
-    setFailed(`Error at character ${(parseError as { offset: string }).offset}`);
+    setFailed(`Error at character ${(parseError as {offset: string}).offset}`);
   }
 
   const annotations: {
@@ -144,7 +144,10 @@ async function run(): Promise<void> {
     }
   }
 
-  const token = getInput("repo-token");
+  const token = getInput('repo-token', {required: true});
+  if (token === '') {
+    setFailed('Missing `repo-token`');
+  }
   const octokit = getOctokit(token);
 
   // call octokit to create a check with annotation and details
@@ -174,9 +177,9 @@ async function run(): Promise<void> {
     // TODO: Get stats from zola stdOut
     .addTable([
       [
-        { data: 'Link Type', header: true },
-        { data: 'Total', header: true },
-        { data: 'Result', header: true }
+        {data: 'Link Type', header: true},
+        {data: 'Total', header: true},
+        {data: 'Result', header: true}
       ],
       ['Internal', totalInternal, 'Pass ✅'],
       ['External', totalExternal, `Fail (${errorCount} error(s) found) ❌`]
