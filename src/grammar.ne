@@ -10,22 +10,110 @@ const lexer = compile({
   count:  /(?:0|[1-9][0-9]*)\./,
   ws:     /[ \t]+/,
   keyword: ["Error:", "Broken link in", "to"],
-  misc: [":"],
+  number: /[0-9]+/,
+  internalMetaMessage: ["> Successfully checked"],
+  metaMessages: ["pages (", "orphan),", "sections", "-> Site content:", "Checking site...", "Checking all internal links with anchors.", "internal link(s) with anchors.", "Checking", "external link(s).", "Skipping", "> Checked", "external link(s):", "error(s) found.", "Done in"],
+  misc: [":", "ms."],
   path:  /(?:(?:.\/|\/)[.a-zA-Z0-9_-]+)+/,
   url_with_error: /\w*?:\/\/.*?(?=: )/,
   string: /(?!\s*$).+/,
   lexerError: error,
-  newline: {match: '\n', lineBreaks: true},
+  newline: {match: '\n', lineBreaks: true}
 });
 %}
 
 # Pass your lexer object using the @lexer option:
 @lexer lexer
 
+# Meta info is in stdOut
+stdOutInput -> stdOutRow {% id %}
+             | stdOutInput %newline stdOutRow {% appendItem(0,2) %}
+             | input
+
+stdOutRow -> metaMessage {% empty %}
+           | successReport {%
+                function(data) {
+                    return {
+                        successReport: data[0],
+                    };
+                }
+            %}
+           | internalLinkMessage {%
+                function(data) {
+                    return {
+                        internal_links: data[0],
+                    };
+                }
+            %}
+           | externalLinkCheckingWithSkippedLinkMessage {%
+                function(data) {
+                    return {
+                        external_links_planed_checking: data[0],
+                    };
+                }
+            %}
+           | externalLinkCheckingMessage {%
+                function(data) {
+                    return {
+                        external_links_planed_checking: data[0],
+                    };
+                }
+            %}
+           | externalLinkCheckingLinkMessage {%
+                function(data) {
+                    return {
+                        external_links_checked: data[0],
+                    };
+                }
+            %}
+           | null {% empty %}
+
+metaMessage -> %metaMessages
+             | %metaMessages %ws %number %misc
+successReport -> %metaMessages %ws %number %ws %metaMessages %number %ws %metaMessages %ws %number %ws %metaMessages {%
+    function(data) {
+        return {
+            pages: data[2]["value"],
+            orphans: data[5]["value"],
+            sections: data[9]["value"],
+        };
+    }
+%}
+internalLinkMessage -> %internalMetaMessage %ws %number %ws %metaMessages {%
+    function(data) {
+        return {
+            total: data[2]["value"],
+        };
+    }
+%}
+externalLinkCheckingWithSkippedLinkMessage -> %metaMessages %ws %number %ws %metaMessages %ws %metaMessages %ws %number %ws %metaMessages {%
+    function(data) {
+        return {
+            total: data[2]["value"],
+            skipped: data[8]["value"]
+        };
+    }
+%}
+externalLinkCheckingMessage -> "Checking" %ws %number %ws %metaMessages {%
+    function(data) {
+        return {
+            total: data[2]["value"],
+        };
+    }
+%}
+
+externalLinkCheckingLinkMessage -> %metaMessages %ws %number %ws %metaMessages %ws %number %ws %metaMessages {%
+    function(data) {
+        return {
+            total: data[2]["value"],
+            errors: data[6]["value"]
+        };
+    }
+%}
+
 # This is the whole input. We have newline delimited messages but we dont know the EOL
 input -> row {% id %}
        | input %newline row {% appendItem(0,2) %}
-
 
 row -> broke_link_message
      | error

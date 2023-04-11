@@ -1,0 +1,6 @@
+Checking site...
+Checking all internal links with anchors.
+> Successfully checked 0 internal link(s) with anchors.
+Checking 0 external link(s). Skipping 0 external link(s).
+-> Site content: 2 pages (0 orphan), 1 sections
+Done in 6ms.

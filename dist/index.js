@@ -18723,12 +18723,15 @@ const lexer = (0,moo.compile)({
     count: /(?:0|[1-9][0-9]*)\./,
     ws: /[ \t]+/,
     keyword: ["Error:", "Broken link in", "to"],
-    misc: [":"],
+    number: /[0-9]+/,
+    internalMetaMessage: ["> Successfully checked"],
+    metaMessages: ["pages (", "orphan),", "sections", "-> Site content:", "Checking site...", "Checking all internal links with anchors.", "internal link(s) with anchors.", "Checking", "external link(s).", "Skipping", "> Checked", "external link(s):", "error(s) found.", "Done in"],
+    misc: [":", "ms."],
     path: /(?:(?:.\/|\/)[.a-zA-Z0-9_-]+)+/,
     url_with_error: /\w*?:\/\/.*?(?=: )/,
     string: /(?!\s*$).+/,
     lexerError: moo.error,
-    newline: { match: '\n', lineBreaks: true },
+    newline: { match: '\n', lineBreaks: true }
 });
 ;
 ;
@@ -18737,6 +18740,77 @@ const lexer = (0,moo.compile)({
 const grammar = {
     Lexer: lexer,
     ParserRules: [
+        { "name": "stdOutInput", "symbols": ["stdOutRow"], "postprocess": id },
+        { "name": "stdOutInput", "symbols": ["stdOutInput", (lexer.has("newline") ? { type: "newline" } : newline), "stdOutRow"], "postprocess": appendItem(0, 2) },
+        { "name": "stdOutInput", "symbols": ["input"] },
+        { "name": "stdOutRow", "symbols": ["metaMessage"], "postprocess": empty },
+        { "name": "stdOutRow", "symbols": ["successReport"], "postprocess": function (data) {
+                return {
+                    successReport: data[0],
+                };
+            }
+        },
+        { "name": "stdOutRow", "symbols": ["internalLinkMessage"], "postprocess": function (data) {
+                return {
+                    internal_links: data[0],
+                };
+            }
+        },
+        { "name": "stdOutRow", "symbols": ["externalLinkCheckingWithSkippedLinkMessage"], "postprocess": function (data) {
+                return {
+                    external_links_planed_checking: data[0],
+                };
+            }
+        },
+        { "name": "stdOutRow", "symbols": ["externalLinkCheckingMessage"], "postprocess": function (data) {
+                return {
+                    external_links_planed_checking: data[0],
+                };
+            }
+        },
+        { "name": "stdOutRow", "symbols": ["externalLinkCheckingLinkMessage"], "postprocess": function (data) {
+                return {
+                    external_links_checked: data[0],
+                };
+            }
+        },
+        { "name": "stdOutRow", "symbols": [], "postprocess": empty },
+        { "name": "metaMessage", "symbols": [(lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages)] },
+        { "name": "metaMessage", "symbols": [(lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("misc") ? { type: "misc" } : misc)] },
+        { "name": "successReport", "symbols": [(lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages)], "postprocess": function (data) {
+                return {
+                    pages: data[2]["value"],
+                    orphans: data[5]["value"],
+                    sections: data[9]["value"],
+                };
+            }
+        },
+        { "name": "internalLinkMessage", "symbols": [(lexer.has("internalMetaMessage") ? { type: "internalMetaMessage" } : internalMetaMessage), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages)], "postprocess": function (data) {
+                return {
+                    total: data[2]["value"],
+                };
+            }
+        },
+        { "name": "externalLinkCheckingWithSkippedLinkMessage", "symbols": [(lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages)], "postprocess": function (data) {
+                return {
+                    total: data[2]["value"],
+                    skipped: data[8]["value"]
+                };
+            }
+        },
+        { "name": "externalLinkCheckingMessage", "symbols": [{ "literal": "Checking" }, (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages)], "postprocess": function (data) {
+                return {
+                    total: data[2]["value"],
+                };
+            }
+        },
+        { "name": "externalLinkCheckingLinkMessage", "symbols": [(lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("number") ? { type: "number" } : number), (lexer.has("ws") ? { type: "ws" } : ws), (lexer.has("metaMessages") ? { type: "metaMessages" } : metaMessages)], "postprocess": function (data) {
+                return {
+                    total: data[2]["value"],
+                    errors: data[6]["value"]
+                };
+            }
+        },
         { "name": "input", "symbols": ["row"], "postprocess": id },
         { "name": "input", "symbols": ["input", (lexer.has("newline") ? { type: "newline" } : newline), "row"], "postprocess": appendItem(0, 2) },
         { "name": "row", "symbols": ["broke_link_message"] },
@@ -18755,7 +18829,7 @@ const grammar = {
             }
         }
     ],
-    ParserStart: "input",
+    ParserStart: "stdOutInput",
 };
 /* harmony default export */ const lib_grammar = (grammar);
 
@@ -24649,6 +24723,7 @@ function run() {
         const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
         const working_directory = (0,core.getInput)('working_directory');
         let dataString = '';
+        let infoString = '';
         const parser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));
         const options = {
             cwd: external_path_.join(__dirname, working_directory),
@@ -24656,6 +24731,9 @@ function run() {
             listeners: {
                 stderr: (data) => {
                     dataString += data.toString();
+                },
+                stdout: (data) => {
+                    infoString += data.toString();
                 }
             }
         };
@@ -24730,21 +24808,51 @@ function run() {
             }
         });
         // Write summary
-        const totalInternal = '1000';
-        const totalExternal = '1000';
-        const errorCount = '100';
-        core.summary.addHeading('Zola check results')
-            // TODO: Get stats from zola stdOut
-            .addTable([
-            [
-                { data: 'Link Type', header: true },
-                { data: 'Total', header: true },
-                { data: 'Result', header: true }
-            ],
-            ['Internal', totalInternal, 'Pass ✅'],
-            ['External', totalExternal, `Fail (${errorCount} error(s) found) ❌`]
-        ])
-            .write();
+        const stdoutParser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));
+        stdoutParser.feed(infoString);
+        if (
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('successReport')).length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const totalExternal = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
+            core.summary.addHeading('Zola check results')
+                .addTable([
+                [
+                    { data: 'Link Type', header: true },
+                    { data: 'Total', header: true },
+                    { data: 'Result', header: true }
+                ],
+                ['Internal', '', 'Pass ✅'],
+                ['External', totalExternal, `Pass ✅`]
+            ])
+                .write();
+        }
+        else {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const totalInternal = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('internal_links'))[0]['internal_links']['total'];
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const totalExternal = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
+            const skippedExternal = 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['skipped'] || '0';
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const errorCount = stdoutParser.results[0].filter((result) => result[0].hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['errors'];
+            core.summary.addHeading('Zola check results')
+                .addTable([
+                [
+                    { data: 'Link Type', header: true },
+                    { data: 'Total', header: true },
+                    { data: 'Result', header: true }
+                ],
+                ['Internal', totalInternal, 'Pass ✅'],
+                [
+                    'External',
+                    `${totalExternal} (Skipped ${skippedExternal})`,
+                    `Fail (${errorCount} error(s) found) ❌`
+                ]
+            ])
+                .write();
+        }
     });
 }
 run();

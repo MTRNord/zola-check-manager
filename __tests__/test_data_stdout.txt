@@ -1,0 +1,6 @@
+Checking site...
+Checking all internal links with anchors.
+> Successfully checked 35 internal link(s) with anchors.
+Checking 17733 external link(s). Skipping 1 external link(s).
+> Checked 17733 external link(s): 601 error(s) found.
+Checking 17733 external link(s).

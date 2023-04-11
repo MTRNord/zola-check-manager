@@ -68,6 +68,7 @@ async function run(): Promise<void> {
   const working_directory = getInput('working_directory');
 
   let dataString = '';
+  let infoString = '';
   const parser: Parser = new Parser(Grammar.fromCompiled(grammar));
   const options: ExecOptions = {
     cwd: path.join(__dirname, working_directory),
@@ -75,6 +76,9 @@ async function run(): Promise<void> {
     listeners: {
       stderr: (data: Buffer) => {
         dataString += data.toString();
+      },
+      stdout: (data: Buffer) => {
+        infoString += data.toString();
       }
     }
   };
@@ -180,22 +184,66 @@ async function run(): Promise<void> {
   });
 
   // Write summary
-  const totalInternal = '1000';
-  const totalExternal = '1000';
-  const errorCount = '100';
-  summary
-    .addHeading('Zola check results')
-    // TODO: Get stats from zola stdOut
-    .addTable([
-      [
-        {data: 'Link Type', header: true},
-        {data: 'Total', header: true},
-        {data: 'Result', header: true}
-      ],
-      ['Internal', totalInternal, 'Pass ✅'],
-      ['External', totalExternal, `Fail (${errorCount} error(s) found) ❌`]
-    ])
-    .write();
+  const stdoutParser: Parser = new Parser(Grammar.fromCompiled(grammar));
+  stdoutParser.feed(infoString);
+
+  if (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    stdoutParser.results[0].filter((result: any) =>
+      result[0].hasOwnProperty('successReport')
+    ).length > 0
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalExternal = stdoutParser.results[0].filter((result: any) =>
+      result[0].hasOwnProperty('external_links_planed_checking')
+    )[0]['external_links_planed_checking']['total'];
+    summary
+      .addHeading('Zola check results')
+      .addTable([
+        [
+          {data: 'Link Type', header: true},
+          {data: 'Total', header: true},
+          {data: 'Result', header: true}
+        ],
+        ['Internal', '', 'Pass ✅'],
+        ['External', totalExternal, `Pass ✅`]
+      ])
+      .write();
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalInternal = stdoutParser.results[0].filter((result: any) =>
+      result[0].hasOwnProperty('internal_links')
+    )[0]['internal_links']['total'];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const totalExternal = stdoutParser.results[0].filter((result: any) =>
+      result[0].hasOwnProperty('external_links_planed_checking')
+    )[0]['external_links_planed_checking']['total'];
+    const skippedExternal =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stdoutParser.results[0].filter((result: any) =>
+        result[0].hasOwnProperty('external_links_planed_checking')
+      )[0]['external_links_planed_checking']['skipped'] || '0';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const errorCount = stdoutParser.results[0].filter((result: any) =>
+      result[0].hasOwnProperty('external_links_planed_checking')
+    )[0]['external_links_planed_checking']['errors'];
+    summary
+      .addHeading('Zola check results')
+      .addTable([
+        [
+          {data: 'Link Type', header: true},
+          {data: 'Total', header: true},
+          {data: 'Result', header: true}
+        ],
+        ['Internal', totalInternal, 'Pass ✅'],
+        [
+          'External',
+          `${totalExternal} (Skipped ${skippedExternal})`,
+          `Fail (${errorCount} error(s) found) ❌`
+        ]
+      ])
+      .write();
+  }
 }
 
 run();
