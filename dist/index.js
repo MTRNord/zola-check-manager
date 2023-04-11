@@ -24611,7 +24611,6 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 // eslint-disable-next-line import/no-named-as-default -- False positive
 
-
 function downloadRelease(version) {
     return __awaiter(this, void 0, void 0, function* () {
         // Download
@@ -24647,8 +24646,7 @@ function run() {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
         // __dirname does not exist in esm world so we fake it the esm way. Nodejs approves.
-        const __filename = (0,external_node_url_namespaceObject.fileURLToPath)(import.meta.url);
-        const __dirname = (0,external_path_.dirname)(__filename);
+        const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
         const working_directory = (0,core.getInput)('working_directory');
         let dataString = '';
         const parser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));

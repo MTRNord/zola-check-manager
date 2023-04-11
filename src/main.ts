@@ -5,11 +5,10 @@ import {which} from '@actions/io';
 import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
 import {readFile} from 'fs/promises';
 import {Grammar, Parser} from 'nearley';
-import path, {dirname} from 'path';
+import path from 'path';
 import grammar from './grammar.js';
 // eslint-disable-next-line import/no-named-as-default -- False positive
 import got from 'got';
-import {fileURLToPath} from 'node:url';
 
 interface WaybackResponse {
   archived_snapshots: {
@@ -56,8 +55,7 @@ async function getZolaCli(version: string): Promise<void> {
 
 async function run(): Promise<void> {
   // __dirname does not exist in esm world so we fake it the esm way. Nodejs approves.
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
+  const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
 
   const working_directory = getInput('working_directory');
 
