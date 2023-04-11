@@ -119,7 +119,8 @@ function run() {
         let dataString = '';
         const parser = new nearley_1.Parser(nearley_1.Grammar.fromCompiled(grammar_1.default));
         const options = {
-            cwd: './lib',
+            // TODO: Allow setting cwd
+            cwd: __dirname,
             listeners: {
                 stderr: (data) => {
                     dataString += data.toString();

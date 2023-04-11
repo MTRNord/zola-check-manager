@@ -42,7 +42,8 @@ async function run(): Promise<void> {
   let dataString = '';
   const parser: Parser = new Parser(Grammar.fromCompiled(grammar));
   const options: ExecOptions = {
-    cwd: './lib',
+    // TODO: Allow setting cwd
+    cwd: __dirname,
     listeners: {
       stderr: (data: Buffer) => {
         dataString += data.toString();
