@@ -24717,7 +24717,7 @@ function run() {
             started_at: startTime.toISOString(),
             completed_at: new Date().toISOString(),
             status: 'completed',
-            conclusion: (0,core.getInput)('action_required'),
+            conclusion: (0,core.getInput)('conclusion_level'),
             output: {
                 title: 'Link is not reachable',
                 summary: 'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',

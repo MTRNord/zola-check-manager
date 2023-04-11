@@ -156,7 +156,7 @@ async function run(): Promise<void> {
     started_at: startTime.toISOString(),
     completed_at: new Date().toISOString(),
     status: 'completed',
-    conclusion: getInput('action_required'),
+    conclusion: getInput('conclusion_level'),
     output: {
       title: 'Link is not reachable',
       summary:
