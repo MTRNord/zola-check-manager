@@ -1,12 +1,4 @@
-import {
-  addPath,
-  debug,
-  endGroup,
-  getInput,
-  setFailed,
-  startGroup,
-  summary
-} from '@actions/core';
+import {addPath, debug, getInput, setFailed, summary} from '@actions/core';
 import {ExecOptions, exec} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
 import {which} from '@actions/io';
