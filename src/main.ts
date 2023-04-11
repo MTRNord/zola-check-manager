@@ -1,7 +1,7 @@
 import {
   addPath,
   debug,
-  error,
+  error as printError,
   getInput,
   setFailed,
   summary
@@ -123,6 +123,10 @@ async function run(): Promise<void> {
 
       const startingPositionOfUrl = line.indexOf(result.url ?? '');
 
+      if (startingPositionOfUrl === -1) {
+        continue;
+      }
+
       let message = `Zola Error Message: ${result.error_message}`;
 
       // Check if we have a webarchive link
@@ -138,7 +142,7 @@ async function run(): Promise<void> {
         }
       }
 
-      error(message, {
+      printError(message, {
         title: 'Link is not reachable',
         file: `/${path.relative(__dirname, result.file ?? '')}`,
         startLine: index,

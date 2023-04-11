@@ -24684,6 +24684,9 @@ function run() {
                     continue;
                 }
                 const startingPositionOfUrl = line.indexOf((_a = result.url) !== null && _a !== void 0 ? _a : '');
+                if (startingPositionOfUrl === -1) {
+                    continue;
+                }
                 let message = `Zola Error Message: ${result.error_message}`;
                 // Check if we have a webarchive link
                 const waybackResponse = yield got_dist_source.get(`http://archive.org/wayback/available?url=${(_b = result.url) !== null && _b !== void 0 ? _b : ''}`)
