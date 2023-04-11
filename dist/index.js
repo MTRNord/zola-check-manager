@@ -81,7 +81,9 @@ const exec_1 = __nccwpck_require__(1514);
 const github_1 = __nccwpck_require__(5438);
 const io_1 = __nccwpck_require__(7436);
 const tool_cache_1 = __nccwpck_require__(7784);
+const promises_1 = __nccwpck_require__(3292);
 const nearley_1 = __nccwpck_require__(7800);
+const path_1 = __importDefault(__nccwpck_require__(1017));
 const grammar_1 = __importDefault(__nccwpck_require__(275));
 function downloadRelease(version) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -115,12 +117,13 @@ function getZolaCli(version) {
     });
 }
 function run() {
+    var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function* () {
+        const working_directory = (0, core_1.getInput)('working_directory');
         let dataString = '';
         const parser = new nearley_1.Parser(nearley_1.Grammar.fromCompiled(grammar_1.default));
         const options = {
-            // TODO: Allow setting cwd
-            cwd: __dirname,
+            cwd: path_1.default.join(__dirname, working_directory),
             listeners: {
                 stderr: (data) => {
                     dataString += data.toString();
@@ -138,9 +141,35 @@ function run() {
         catch (parseError) {
             (0, core_1.setFailed)(`Error at character ${parseError.offset}`);
         }
-        // TODO: Use results: parser.results
-        // TODO: Hook to github roughly like this:
-        const token = (0, core_1.getInput)('repo-token');
+        const annotations = [];
+        for (const rawResult of parser.results[0]) {
+            const result = rawResult;
+            if (!result.hasOwnProperty('file')) {
+                continue;
+            }
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- We ensured this exists previously
+            const data = yield (0, promises_1.readFile)(result.file, 'utf8');
+            const lines = data.split(/\r?\n/);
+            for (const [index, line] of lines.entries()) {
+                if (line.trim() === '') {
+                    continue;
+                }
+                const startingPositionOfUrl = line.indexOf((_a = result.url) !== null && _a !== void 0 ? _a : '');
+                annotations.push({
+                    // This is a little awkward but does the job
+                    path: `/${path_1.default.relative(__dirname, (_b = result.file) !== null && _b !== void 0 ? _b : '')}`,
+                    start_line: index,
+                    end_line: index,
+                    start_column: startingPositionOfUrl,
+                    end_column: startingPositionOfUrl + ((_c = result.url) !== null && _c !== void 0 ? _c : '').length,
+                    annotation_level: (0, core_1.getInput)('annotation_level'),
+                    // TODO: Mention if webarchive is available
+                    // TODO: Format message
+                    message: result.error_message
+                });
+            }
+        }
+        const token = process.env['GITHUB_TOKEN'] || '';
         const octokit = (0, github_1.getOctokit)(token);
         // call octokit to create a check with annotation and details
         yield octokit.rest.checks.create({
@@ -151,26 +180,11 @@ function run() {
             started_at: startTime.toISOString(),
             completed_at: new Date().toISOString(),
             status: 'completed',
-            // TODO: Allow changing how bad this is
-            conclusion: 'action_required',
+            conclusion: (0, core_1.getInput)('action_required'),
             output: {
                 title: 'Link is not reachable',
                 summary: 'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
-                annotations: [
-                    {
-                        // TODO: Use file from json
-                        path: 'README.md',
-                        // TODO: Parse files to find the correct links within a file
-                        start_line: 1,
-                        end_line: 1,
-                        start_column: 1,
-                        end_column: 1,
-                        // TODO: Allow changing how bad this is
-                        annotation_level: 'warning',
-                        // TODO: Use error message
-                        message: 'README.md must start with a header'
-                    }
-                ]
+                annotations
             }
         });
         // Write summary
@@ -14873,6 +14887,14 @@ module.exports = require("events");
 
 "use strict";
 module.exports = require("fs");
+
+/***/ }),
+
+/***/ 3292:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("fs/promises");
 
 /***/ }),
 

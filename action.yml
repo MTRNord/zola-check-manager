@@ -1,11 +1,19 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: "zola-check-manager"
+description: "An action helping to bring the zola check command results into your github workflow"
+author: "MTRNord"
 inputs:
-  milliseconds: # change this
-    required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+  working_directory:
+    required: false
+    description: "Where to run zola check in"
+    default: "."
+  conclusion_level:
+    required: false
+    description: "The final conclusion of the check. Can be one of `action_required`, `failure`, `neutral`, `success`"
+    default: "action_required"
+  annotation_level:
+    required: false
+    description: "The level of the annotation. Can be one of `notice`, `failure`, `warning`"
+    default: "warning"
 runs:
-  using: 'node16'
-  main: 'dist/index.js'
+  using: "node16"
+  main: "dist/index.js"

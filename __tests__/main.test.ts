@@ -1,4 +1,4 @@
-import {expect, test} from '@jest/globals';
+import {test} from '@jest/globals';
 import {readFile, writeFile} from 'fs/promises';
 
 import {Grammar, Parser} from 'nearley';

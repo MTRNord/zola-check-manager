@@ -3,7 +3,9 @@ import {ExecOptions, exec} from '@actions/exec';
 import {getOctokit, context} from '@actions/github';
 import {which} from '@actions/io';
 import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
+import {readFile} from 'fs/promises';
 import {Grammar, Parser} from 'nearley';
+import path from 'path';
 import grammar from './grammar';
 
 async function downloadRelease(version: string): Promise<string> {
@@ -39,11 +41,12 @@ async function getZolaCli(version: string): Promise<void> {
 }
 
 async function run(): Promise<void> {
+  const working_directory = getInput('working_directory');
+
   let dataString = '';
   const parser: Parser = new Parser(Grammar.fromCompiled(grammar));
   const options: ExecOptions = {
-    // TODO: Allow setting cwd
-    cwd: __dirname,
+    cwd: path.join(__dirname, working_directory),
     listeners: {
       stderr: (data: Buffer) => {
         dataString += data.toString();
@@ -65,11 +68,53 @@ async function run(): Promise<void> {
     setFailed(`Error at character ${(parseError as {offset: string}).offset}`);
   }
 
-  // TODO: Use results: parser.results
+  const annotations: {
+    path: string;
+    start_line: number;
+    end_line: number;
+    start_column: number;
+    end_column: number;
+    annotation_level: string;
+    message: string;
+  }[] = [];
 
-  // TODO: Hook to github roughly like this:
+  for (const rawResult of parser.results[0]) {
+    const result = rawResult as {
+      error_message: string;
+      file?: string;
+      url?: string;
+    };
+    if (!result.hasOwnProperty('file')) {
+      continue;
+    }
 
-  const token = getInput('repo-token');
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- We ensured this exists previously
+    const data: string = await readFile(result.file!, 'utf8');
+    const lines: string[] = data.split(/\r?\n/);
+
+    for (const [index, line] of lines.entries()) {
+      if (line.trim() === '') {
+        continue;
+      }
+
+      const startingPositionOfUrl = line.indexOf(result.url ?? '');
+
+      annotations.push({
+        // This is a little awkward but does the job
+        path: `/${path.relative(__dirname, result.file ?? '')}`,
+        start_line: index,
+        end_line: index,
+        start_column: startingPositionOfUrl,
+        end_column: startingPositionOfUrl + (result.url ?? '').length,
+        annotation_level: getInput('annotation_level'),
+        // TODO: Mention if webarchive is available
+        // TODO: Format message
+        message: result.error_message
+      });
+    }
+  }
+
+  const token = process.env['GITHUB_TOKEN'] || '';
   const octokit = getOctokit(token);
 
   // call octokit to create a check with annotation and details
@@ -81,27 +126,12 @@ async function run(): Promise<void> {
     started_at: startTime.toISOString(),
     completed_at: new Date().toISOString(),
     status: 'completed',
-    // TODO: Allow changing how bad this is
-    conclusion: 'action_required',
+    conclusion: getInput('action_required'),
     output: {
       title: 'Link is not reachable',
       summary:
         'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
-      annotations: [
-        {
-          // TODO: Use file from json
-          path: 'README.md',
-          // TODO: Parse files to find the correct links within a file
-          start_line: 1,
-          end_line: 1,
-          start_column: 1,
-          end_column: 1,
-          // TODO: Allow changing how bad this is
-          annotation_level: 'warning',
-          // TODO: Use error message
-          message: 'README.md must start with a header'
-        }
-      ]
+      annotations
     }
   });
 
