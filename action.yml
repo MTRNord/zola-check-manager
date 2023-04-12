@@ -1,6 +1,9 @@
 name: "zola-check-manager"
 description: "An action helping to bring the zola check command results into your github workflow"
 author: "MTRNord"
+branding:
+  icon: "check-circle"
+  color: "purple"
 inputs:
   working_directory:
     required: false
