@@ -71,6 +71,7 @@ describe('action test suite', () => {
 
     process.env['GITHUB_REPOSITORY'] = 'foo/bar';
     process.env['GITHUB_STEP_SUMMARY'] = path.join(__dirname, 'summary');
+    process.env['GITHUB_SHA'] = '1234';
     closeSync(openSync(process.env['GITHUB_STEP_SUMMARY'], 'w'));
     process.env['GITHUB_EVENT_PATH'] = path.join(__dirname, 'payload.json');
     process.env['RUNNER_TOOL_CACHE'] = path.join(__dirname, 'tool_cache');
@@ -80,7 +81,7 @@ describe('action test suite', () => {
       .persist()
       .post(
         '/repos/foo/bar/check-runs',
-        '{"name":"Zola Check","status":"completed","conclusion":"neutral","output":{"title":"Link is not reachable","summary":"Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them","annotations":[{"path":"/test_page/content/blog/second.md","start_line":7,"end_line":7,"start_column":34,"end_column":63,"annotation_level":"","message":"Zola Error Message: Client error status code (404 Not Found) received"}]}}'
+        '{"name":"Zola Check","head_sha":"1234","status":"completed","conclusion":"neutral","output":{"title":"Link is not reachable","summary":"Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them","annotations":[{"path":"/test_page/content/blog/second.md","start_line":7,"end_line":7,"start_column":34,"end_column":63,"annotation_level":"","message":"Zola Error Message: Client error status code (404 Not Found) received"}]}}'
       )
       .reply(201);
 
