@@ -24696,7 +24696,6 @@ var nearley = __nccwpck_require__(7800);
 
 
 
-// eslint-disable-next-line import/no-named-as-default -- False positive
 
 // @ts-ignore
 

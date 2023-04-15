@@ -6,7 +6,6 @@ import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
 import {readFile} from 'fs/promises';
 import path from 'path';
 import grammar from './grammar.js';
-// eslint-disable-next-line import/no-named-as-default -- False positive
 import got from 'got';
 // @ts-ignore
 import nearly from 'nearley/lib/nearley.js';
@@ -36,7 +35,9 @@ async function downloadRelease(version: string): Promise<string> {
     downloadPath = await downloadTool(downloadUrl);
   } catch (error) {
     debug(error as string);
-    throw new Error(`Failed to download version v${version}: ${error}`);
+    throw new Error(
+      `Failed to download version v${version}: ${error as string}`
+    );
   }
 
   // Extract
