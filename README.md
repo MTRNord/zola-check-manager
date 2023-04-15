@@ -32,4 +32,4 @@ jobs:
 
 * `working_directory`: The folder where the `zola check` should be executed. Default: `.`
 * `repo-token`: The token to use to authenticate with Github. Default: `${{ secrets.GITHUB_TOKEN }}`. This requires the `checks:write` permission.
-* `conclusion_level`: The conclusion level to use. Default: `failure`. Can be `action_required`, `failure`, `neutral`, `success`. Default: `action_required`
+* `conclusion_level`: The conclusion level to use. Can be `action_required`, `failure`, `neutral`, `success`. Default: `action_required`
