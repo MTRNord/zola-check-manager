@@ -33,3 +33,9 @@ jobs:
 * `working_directory`: The folder where the `zola check` should be executed. Default: `.`
 * `repo-token`: The token to use to authenticate with Github. Default: `${{ secrets.GITHUB_TOKEN }}`. This requires the `checks:write` permission.
 * `conclusion_level`: The conclusion level to use. Can be `action_required`, `failure`, `neutral`, `success`. Default: `action_required`
+
+## Commit Guideline
+
+Please use [conventional commits](https://www.conventionalcommits.org). You can use the pre-commit script to ensure you
+do use conventional commits by running `pre-commit install -t prepare-commit-msg -t commit-msg`
+after [installing pre-commit](https://pre-commit.com/#install).
