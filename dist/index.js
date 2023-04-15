@@ -18683,6 +18683,23 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 /******/ }
 /******/ 
 /************************************************************************/
+/******/ /* webpack/runtime/define property getters */
+/******/ (() => {
+/******/ 	// define getter functions for harmony exports
+/******/ 	__nccwpck_require__.d = (exports, definition) => {
+/******/ 		for(var key in definition) {
+/******/ 			if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			}
+/******/ 		}
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/hasOwnProperty shorthand */
+/******/ (() => {
+/******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ })();
+/******/ 
 /******/ /* webpack/runtime/compat */
 /******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
@@ -18691,6 +18708,11 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
+
+// EXPORTS
+__nccwpck_require__.d(__webpack_exports__, {
+  "K": () => (/* binding */ run)
+});
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
 var core = __nccwpck_require__(2186);
@@ -18704,8 +18726,6 @@ var io = __nccwpck_require__(7436);
 var tool_cache = __nccwpck_require__(7784);
 ;// CONCATENATED MODULE: external "fs/promises"
 const promises_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("fs/promises");
-// EXTERNAL MODULE: ./node_modules/nearley/lib/nearley.js
-var nearley = __nccwpck_require__(7800);
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(1017);
 // EXTERNAL MODULE: ./node_modules/moo/moo.js
@@ -18717,9 +18737,10 @@ var moo = __nccwpck_require__(3329);
 // @ts-ignore
 function id(d) { return d[0]; }
 
+const { compile, keywords, error } = moo;
 const appendItem = function (a, b) { return function (d) { return d[a].concat(d[b]); }; };
 const empty = function (d) { return []; };
-const lexer = (0,moo.compile)({
+const lexer = compile({
     count: /(?:0|[1-9][0-9]*)\./,
     ws: /[ \t]+/,
     keyword: ["Error:", "Broken link in", "to"],
@@ -18730,7 +18751,7 @@ const lexer = (0,moo.compile)({
     path: /(?:(?:.\/|\/)[.a-zA-Z0-9_-]+)+/,
     url_with_error: /\w*?:\/\/.*?(?=: )/,
     string: /(?!\s*$).+/,
-    lexerError: moo.error,
+    lexerError: error,
     newline: { match: '\n', lineBreaks: true }
 });
 ;
@@ -24664,17 +24685,9 @@ const got = source_create(defaults);
 
 
 
+// EXTERNAL MODULE: ./node_modules/nearley/lib/nearley.js
+var nearley = __nccwpck_require__(7800);
 ;// CONCATENATED MODULE: ./lib/main.js
-var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-
 
 
 
@@ -24685,180 +24698,184 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 // eslint-disable-next-line import/no-named-as-default -- False positive
 
-function downloadRelease(version) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Download
-        const downloadUrl = `https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-x86_64-unknown-linux-gnu.tar.gz`;
-        let downloadPath = null;
-        try {
-            downloadPath = yield (0,tool_cache.downloadTool)(downloadUrl);
-        }
-        catch (error) {
-            (0,core.debug)(error);
-            throw new Error(`Failed to download version v${version}: ${error}`);
-        }
-        // Extract
-        const extPath = yield (0,tool_cache.extractTar)(downloadPath);
-        // Install into the local tool cache - node extracts with a root folder that matches the fileName downloaded
-        return yield (0,tool_cache.cacheDir)(extPath, 'zola', version);
-    });
+// @ts-ignore
+
+const { Grammar, Parser } = nearley;
+// Purely used for tests
+function areWeTestingWithJest() {
+    return process.env.JEST_WORKER_ID !== undefined;
 }
-function getZolaCli(version) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // look if the binary is cached
-        let toolPath;
-        toolPath = (0,tool_cache.find)('zola', version);
-        // if not: download, extract and cache
-        if (!toolPath) {
-            toolPath = yield downloadRelease(version);
-            (0,core.debug)(`Zola cached under ${toolPath}`);
-        }
-        (0,core.addPath)(toolPath);
-    });
+async function downloadRelease(version) {
+    // Download
+    const downloadUrl = `https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-x86_64-unknown-linux-gnu.tar.gz`;
+    let downloadPath = null;
+    try {
+        downloadPath = await (0,tool_cache.downloadTool)(downloadUrl);
+    }
+    catch (error) {
+        (0,core.debug)(error);
+        throw new Error(`Failed to download version v${version}: ${error}`);
+    }
+    // Extract
+    const extPath = await (0,tool_cache.extractTar)(downloadPath);
+    // Install into the local tool cache - node extracts with a root folder that matches the fileName downloaded
+    return await (0,tool_cache.cacheDir)(extPath, 'zola', version);
 }
-function run() {
-    var _a, _b, _c, _d, _e;
-    return __awaiter(this, void 0, void 0, function* () {
-        // __dirname does not exist in esm world so we fake it the esm way. Nodejs approves.
-        const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
-        const working_directory = (0,core.getInput)('working_directory');
-        let dataString = '';
-        let infoString = '';
-        const parser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));
-        const options = {
-            cwd: external_path_.join(__dirname, working_directory),
-            ignoreReturnCode: true,
-            listeners: {
-                stderr: (data) => {
-                    dataString += data.toString();
-                },
-                stdout: (data) => {
-                    infoString += data.toString();
-                }
+async function getZolaCli(version) {
+    // look if the binary is cached
+    let toolPath;
+    toolPath = (0,tool_cache.find)('zola', version);
+    // if not: download, extract and cache
+    if (!toolPath) {
+        toolPath = await downloadRelease(version);
+        (0,core.debug)(`Zola cached under ${toolPath}`);
+    }
+    (0,core.addPath)(toolPath);
+}
+async function run() {
+    // __dirname does not exist in esm world so we fake it the esm way. Nodejs approves.
+    const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
+    const working_directory = (0,core.getInput)('working_directory');
+    let dataString = '';
+    let infoString = '';
+    const parser = new Parser(Grammar.fromCompiled(lib_grammar));
+    const options = {
+        cwd: external_path_.join(__dirname, working_directory),
+        ignoreReturnCode: true,
+        listeners: {
+            stderr: (data) => {
+                dataString += data.toString();
+            },
+            stdout: (data) => {
+                infoString += data.toString();
             }
-        };
-        // Download zola
-        yield getZolaCli('0.17.2');
-        const zolaPath = yield (0,io.which)('zola', true);
-        const startTime = new Date();
-        yield (0,exec.exec)(`${zolaPath}`, ['check'], options);
-        try {
-            parser.feed(dataString);
         }
-        catch (parseError) {
-            (0,core.setFailed)(`Error at character ${parseError.offset}`);
+    };
+    // Download zola
+    await getZolaCli('0.17.2');
+    const zolaPath = await (0,io.which)('zola', true);
+    const startTime = new Date();
+    await (0,exec.exec)(`${zolaPath}`, ['check'], options);
+    try {
+        parser.feed(dataString);
+    }
+    catch (parseError) {
+        (0,core.setFailed)(`Error at character ${parseError.offset}`);
+    }
+    const annotations = [];
+    for (const rawResult of parser.results[0]) {
+        const result = rawResult;
+        if (!result.hasOwnProperty('file')) {
+            continue;
         }
-        const annotations = [];
-        for (const rawResult of parser.results[0]) {
-            const result = rawResult;
-            if (!result.hasOwnProperty('file')) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- We ensured this exists previously
+        const data = await (0,promises_namespaceObject.readFile)(result.file, 'utf8');
+        const lines = data.split(/\r?\n/);
+        for (const [index, line] of lines.entries()) {
+            if (line.trim() === '') {
                 continue;
             }
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- We ensured this exists previously
-            const data = yield (0,promises_namespaceObject.readFile)(result.file, 'utf8');
-            const lines = data.split(/\r?\n/);
-            for (const [index, line] of lines.entries()) {
-                if (line.trim() === '') {
-                    continue;
-                }
-                const startingPositionOfUrl = line.indexOf((_a = result.url) !== null && _a !== void 0 ? _a : '');
-                if (startingPositionOfUrl === -1) {
-                    continue;
-                }
-                let message = `Zola Error Message: ${result.error_message}`;
-                // Check if we have a webarchive link
-                const waybackResponse = yield got_dist_source.get(`http://archive.org/wayback/available?url=${(_b = result.url) !== null && _b !== void 0 ? _b : ''}`)
-                    .json();
-                if (waybackResponse.archived_snapshots !== null) {
-                    if (((_c = waybackResponse.archived_snapshots.closest) === null || _c === void 0 ? void 0 : _c.available) &&
-                        waybackResponse.archived_snapshots.closest.status === '200') {
-                        message = `${message}\nWayback Machine Link is available: ${waybackResponse.archived_snapshots.closest.url}`;
-                    }
-                }
-                annotations.push({
-                    // This is a little awkward but does the job
-                    path: `/${external_path_.relative(__dirname, (_d = result.file) !== null && _d !== void 0 ? _d : '')}`,
-                    start_line: index,
-                    end_line: index,
-                    start_column: startingPositionOfUrl,
-                    end_column: startingPositionOfUrl + ((_e = result.url) !== null && _e !== void 0 ? _e : '').length,
-                    annotation_level: (0,core.getInput)('annotation_level'),
-                    message
-                });
+            const startingPositionOfUrl = line.indexOf(result.url ?? '');
+            if (startingPositionOfUrl === -1) {
+                continue;
             }
-        }
-        // Only create result if there is anything to report
-        if (annotations.length > 0) {
-            const token = (0,core.getInput)('repo-token');
-            const octokit = (0,github.getOctokit)(token);
-            // call octokit to create a check with annotation and details
-            yield octokit.rest.checks.create({
-                owner: github.context.repo.owner,
-                repo: github.context.repo.repo,
-                name: 'Zola Check',
-                head_sha: github.context.sha,
-                started_at: startTime.toISOString(),
-                completed_at: new Date().toISOString(),
-                status: 'completed',
-                conclusion: (0,core.getInput)('conclusion_level'),
-                output: {
-                    title: 'Link is not reachable',
-                    summary: 'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
-                    annotations
+            let message = `Zola Error Message: ${result.error_message}`;
+            // Check if we have a webarchive link
+            const waybackResponse = await got_dist_source.get(`http://archive.org/wayback/available?url=${result.url ?? ''}`)
+                .json();
+            if (waybackResponse.archived_snapshots !== null) {
+                if (waybackResponse.archived_snapshots.closest?.available &&
+                    waybackResponse.archived_snapshots.closest.status === '200') {
+                    message = `${message}\nWayback Machine Link is available: ${waybackResponse.archived_snapshots.closest.url}`;
                 }
+            }
+            annotations.push({
+                // This is a little awkward but does the job
+                path: `/${external_path_.relative(__dirname, result.file ?? '')}`,
+                start_line: index,
+                end_line: index,
+                start_column: startingPositionOfUrl,
+                end_column: startingPositionOfUrl + (result.url ?? '').length,
+                annotation_level: (0,core.getInput)('annotation_level'),
+                message
             });
         }
-        // Write summary
-        const stdoutParser = new nearley.Parser(nearley.Grammar.fromCompiled(lib_grammar));
-        stdoutParser.feed(infoString);
-        if (
+    }
+    // Only create result if there is anything to report
+    if (annotations.length > 0) {
+        const token = (0,core.getInput)('repo-token');
+        const octokit = (0,github.getOctokit)(token);
+        // call octokit to create a check with annotation and details
+        await octokit.rest.checks.create({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            name: 'Zola Check',
+            head_sha: github.context.sha,
+            started_at: areWeTestingWithJest() ? undefined : startTime.toISOString(),
+            completed_at: areWeTestingWithJest()
+                ? undefined
+                : new Date().toISOString(),
+            status: 'completed',
+            conclusion: (0,core.getInput)('conclusion_level'),
+            output: {
+                title: 'Link is not reachable',
+                summary: 'Zola check found links which are not reachable. Make sure to either ignore these due to being false positives or fixing them',
+                annotations
+            }
+        });
+    }
+    // Write summary
+    const stdoutParser = new Parser(Grammar.fromCompiled(lib_grammar));
+    stdoutParser.feed(infoString);
+    if (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    stdoutParser.results[0].filter((result) => result.hasOwnProperty('successReport')).length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stdoutParser.results[0].filter((result) => result.hasOwnProperty('successReport')).length > 0) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalExternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
-            core.summary.addHeading('Zola check results')
-                .addTable([
-                [
-                    { data: 'Link Type', header: true },
-                    { data: 'Total', header: true },
-                    { data: 'Result', header: true }
-                ],
-                ['Internal', '', 'Pass ✅'],
-                ['External', totalExternal, `Pass ✅`]
-            ])
-                .write();
-        }
-        else {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalInternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('internal_links'))[0]['internal_links']['total'];
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const totalExternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
-            const skippedExternal = 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['skipped'] || '0';
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const errorCount = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_checked'))[0]['external_links_checked']['errors'];
-            core.summary.addHeading('Zola check results')
-                .addTable([
-                [
-                    { data: 'Link Type', header: true },
-                    { data: 'Total', header: true },
-                    { data: 'Result', header: true }
-                ],
-                ['Internal', totalInternal, 'Pass ✅'],
-                [
-                    'External',
-                    `${totalExternal} (Skipped ${skippedExternal})`,
-                    `Fail (${errorCount} error(s) found) ❌`
-                ]
-            ])
-                .write();
-        }
-    });
+        const totalExternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
+        core.summary.addHeading('Zola check results')
+            .addTable([
+            [
+                { data: 'Link Type', header: true },
+                { data: 'Total', header: true },
+                { data: 'Result', header: true }
+            ],
+            ['Internal', '', 'Pass ✅'],
+            ['External', totalExternal, `Pass ✅`]
+        ])
+            .write();
+    }
+    else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalInternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('internal_links'))[0]['internal_links']['total'];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const totalExternal = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['total'];
+        const skippedExternal = 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_planed_checking'))[0]['external_links_planed_checking']['skipped'] || '0';
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const errorCount = stdoutParser.results[0].filter((result) => result.hasOwnProperty('external_links_checked'))[0]['external_links_checked']['errors'];
+        core.summary.addHeading('Zola check results')
+            .addTable([
+            [
+                { data: 'Link Type', header: true },
+                { data: 'Total', header: true },
+                { data: 'Result', header: true }
+            ],
+            ['Internal', totalInternal, 'Pass ✅'],
+            [
+                'External',
+                `${totalExternal} (Skipped ${skippedExternal})`,
+                `Fail (${errorCount} error(s) found) ❌`
+            ]
+        ])
+            .write();
+    }
 }
 run();
 
 })();
 
+var __webpack_exports__run = __webpack_exports__.K;
+export { __webpack_exports__run as run };
 
 //# sourceMappingURL=index.js.map

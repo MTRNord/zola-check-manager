@@ -96,6 +96,9 @@ Thumbs.db
 
 # Ignore built ts files
 __tests__/runner/*
+__tests__/tool_cache
+__tests__/tool_temp
+__tests__/summary
 lib/**/*
 
 # Debug information

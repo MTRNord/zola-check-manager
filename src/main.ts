@@ -4,11 +4,13 @@ import {getOctokit, context} from '@actions/github';
 import {which} from '@actions/io';
 import {cacheDir, downloadTool, extractTar, find} from '@actions/tool-cache';
 import {readFile} from 'fs/promises';
-import {Grammar, Parser} from 'nearley';
 import path from 'path';
 import grammar from './grammar.js';
 // eslint-disable-next-line import/no-named-as-default -- False positive
 import got from 'got';
+// @ts-ignore
+import nearly from 'nearley/lib/nearley.js';
+const {Grammar, Parser} = nearly;
 
 interface WaybackResponse {
   archived_snapshots: {
@@ -19,6 +21,11 @@ interface WaybackResponse {
       status: string;
     };
   };
+}
+
+// Purely used for tests
+function areWeTestingWithJest() {
+  return process.env.JEST_WORKER_ID !== undefined;
 }
 
 async function downloadRelease(version: string): Promise<string> {
@@ -53,7 +60,7 @@ async function getZolaCli(version: string): Promise<void> {
   addPath(toolPath);
 }
 
-async function run(): Promise<void> {
+export async function run(): Promise<void> {
   // __dirname does not exist in esm world so we fake it the esm way. Nodejs approves.
   const __dirname = process.env['GITHUB_WORKSPACE'] || '.';
 
@@ -61,7 +68,7 @@ async function run(): Promise<void> {
 
   let dataString = '';
   let infoString = '';
-  const parser: Parser = new Parser(Grammar.fromCompiled(grammar));
+  const parser: typeof Parser = new Parser(Grammar.fromCompiled(grammar));
   const options: ExecOptions = {
     cwd: path.join(__dirname, working_directory),
     ignoreReturnCode: true,
@@ -163,8 +170,10 @@ async function run(): Promise<void> {
       repo: context.repo.repo,
       name: 'Zola Check',
       head_sha: context.sha,
-      started_at: startTime.toISOString(),
-      completed_at: new Date().toISOString(),
+      started_at: areWeTestingWithJest() ? undefined : startTime.toISOString(),
+      completed_at: areWeTestingWithJest()
+        ? undefined
+        : new Date().toISOString(),
       status: 'completed',
       conclusion: getInput('conclusion_level'),
       output: {
@@ -177,7 +186,7 @@ async function run(): Promise<void> {
   }
 
   // Write summary
-  const stdoutParser: Parser = new Parser(Grammar.fromCompiled(grammar));
+  const stdoutParser: typeof Parser = new Parser(Grammar.fromCompiled(grammar));
   stdoutParser.feed(infoString);
 
   if (

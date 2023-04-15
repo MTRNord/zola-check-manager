@@ -1,8 +1,8 @@
 @preprocessor typescript
 
 @{%
-import { compile, keywords, error } from 'moo';
-
+import { default as moo } from 'moo';
+const  { compile, keywords, error } = moo;
 const appendItem = function (a: number, b: number) { return function (d: any) { return d[a].concat(d[b]); } };
 const empty = function (d: any) { return []; };
 
