@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: MTRNord/zola-check-manager@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Inputs
