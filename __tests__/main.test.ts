@@ -1,14 +1,14 @@
-import {test} from '@jest/globals';
-import {readFile, writeFile} from 'fs/promises';
+import { test } from '@jest/globals';
+import { readFile, writeFile } from 'fs/promises';
 
-import path, {dirname} from 'node:path';
+import path, { dirname } from 'node:path';
 import grammar from '../src/grammar.js';
 import nock from 'nock';
-import {fileURLToPath} from 'node:url';
+import { fileURLToPath } from 'node:url';
 // @ts-ignore
 import nearly from 'nearley/lib/nearley.js';
-import {closeSync, openSync} from 'node:fs';
-const {Grammar, Parser} = nearly;
+import { closeSync, openSync } from 'node:fs';
+const { Grammar, Parser } = nearly;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -88,5 +88,5 @@ describe('action test suite', () => {
     const main = await import('../src/main.js');
 
     await main.run();
-  });
+  }, 10000);
 });

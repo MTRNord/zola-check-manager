@@ -13793,14 +13793,42 @@ var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER ||
 // Max safe segment length for coercion.
 var MAX_SAFE_COMPONENT_LENGTH = 16
 
+var MAX_SAFE_BUILD_LENGTH = MAX_LENGTH - 6
+
 // The actual regexps go on exports.re
 var re = exports.re = []
+var safeRe = exports.safeRe = []
 var src = exports.src = []
 var t = exports.tokens = {}
 var R = 0
 
 function tok (n) {
   t[n] = R++
+}
+
+var LETTERDASHNUMBER = '[a-zA-Z0-9-]'
+
+// Replace some greedy regex tokens to prevent regex dos issues. These regex are
+// used internally via the safeRe object since all inputs in this library get
+// normalized first to trim and collapse all extra whitespace. The original
+// regexes are exported for userland consumption and lower level usage. A
+// future breaking change could export the safer regex only with a note that
+// all input should have extra whitespace removed.
+var safeRegexReplacements = [
+  ['\\s', 1],
+  ['\\d', MAX_LENGTH],
+  [LETTERDASHNUMBER, MAX_SAFE_BUILD_LENGTH],
+]
+
+function makeSafeRe (value) {
+  for (var i = 0; i < safeRegexReplacements.length; i++) {
+    var token = safeRegexReplacements[i][0]
+    var max = safeRegexReplacements[i][1]
+    value = value
+      .split(token + '*').join(token + '{0,' + max + '}')
+      .split(token + '+').join(token + '{1,' + max + '}')
+  }
+  return value
 }
 
 // The following Regular Expressions can be used for tokenizing,
@@ -13812,14 +13840,14 @@ function tok (n) {
 tok('NUMERICIDENTIFIER')
 src[t.NUMERICIDENTIFIER] = '0|[1-9]\\d*'
 tok('NUMERICIDENTIFIERLOOSE')
-src[t.NUMERICIDENTIFIERLOOSE] = '[0-9]+'
+src[t.NUMERICIDENTIFIERLOOSE] = '\\d+'
 
 // ## Non-numeric Identifier
 // Zero or more digits, followed by a letter or hyphen, and then zero or
 // more letters, digits, or hyphens.
 
 tok('NONNUMERICIDENTIFIER')
-src[t.NONNUMERICIDENTIFIER] = '\\d*[a-zA-Z-][a-zA-Z0-9-]*'
+src[t.NONNUMERICIDENTIFIER] = '\\d*[a-zA-Z-]' + LETTERDASHNUMBER + '*'
 
 // ## Main Version
 // Three dot-separated numeric identifiers.
@@ -13861,7 +13889,7 @@ src[t.PRERELEASELOOSE] = '(?:-?(' + src[t.PRERELEASEIDENTIFIERLOOSE] +
 // Any combination of digits, letters, or hyphens.
 
 tok('BUILDIDENTIFIER')
-src[t.BUILDIDENTIFIER] = '[0-9A-Za-z-]+'
+src[t.BUILDIDENTIFIER] = LETTERDASHNUMBER + '+'
 
 // ## Build Metadata
 // Plus sign, followed by one or more period-separated build metadata
@@ -13941,6 +13969,7 @@ src[t.COERCE] = '(^|[^\\d])' +
               '(?:$|[^\\d])'
 tok('COERCERTL')
 re[t.COERCERTL] = new RegExp(src[t.COERCE], 'g')
+safeRe[t.COERCERTL] = new RegExp(makeSafeRe(src[t.COERCE]), 'g')
 
 // Tilde ranges.
 // Meaning is "reasonably at or greater than"
@@ -13950,6 +13979,7 @@ src[t.LONETILDE] = '(?:~>?)'
 tok('TILDETRIM')
 src[t.TILDETRIM] = '(\\s*)' + src[t.LONETILDE] + '\\s+'
 re[t.TILDETRIM] = new RegExp(src[t.TILDETRIM], 'g')
+safeRe[t.TILDETRIM] = new RegExp(makeSafeRe(src[t.TILDETRIM]), 'g')
 var tildeTrimReplace = '$1~'
 
 tok('TILDE')
@@ -13965,6 +13995,7 @@ src[t.LONECARET] = '(?:\\^)'
 tok('CARETTRIM')
 src[t.CARETTRIM] = '(\\s*)' + src[t.LONECARET] + '\\s+'
 re[t.CARETTRIM] = new RegExp(src[t.CARETTRIM], 'g')
+safeRe[t.CARETTRIM] = new RegExp(makeSafeRe(src[t.CARETTRIM]), 'g')
 var caretTrimReplace = '$1^'
 
 tok('CARET')
@@ -13986,6 +14017,7 @@ src[t.COMPARATORTRIM] = '(\\s*)' + src[t.GTLT] +
 
 // this one has to use the /g flag
 re[t.COMPARATORTRIM] = new RegExp(src[t.COMPARATORTRIM], 'g')
+safeRe[t.COMPARATORTRIM] = new RegExp(makeSafeRe(src[t.COMPARATORTRIM]), 'g')
 var comparatorTrimReplace = '$1$2$3'
 
 // Something like `1.2.3 - 1.2.4`
@@ -14014,6 +14046,14 @@ for (var i = 0; i < R; i++) {
   debug(i, src[i])
   if (!re[i]) {
     re[i] = new RegExp(src[i])
+
+    // Replace all greedy whitespace to prevent regex dos issues. These regex are
+    // used internally via the safeRe object since all inputs in this library get
+    // normalized first to trim and collapse all extra whitespace. The original
+    // regexes are exported for userland consumption and lower level usage. A
+    // future breaking change could export the safer regex only with a note that
+    // all input should have extra whitespace removed.
+    safeRe[i] = new RegExp(makeSafeRe(src[i]))
   }
 }
 
@@ -14038,7 +14078,7 @@ function parse (version, options) {
     return null
   }
 
-  var r = options.loose ? re[t.LOOSE] : re[t.FULL]
+  var r = options.loose ? safeRe[t.LOOSE] : safeRe[t.FULL]
   if (!r.test(version)) {
     return null
   }
@@ -14093,7 +14133,7 @@ function SemVer (version, options) {
   this.options = options
   this.loose = !!options.loose
 
-  var m = version.trim().match(options.loose ? re[t.LOOSE] : re[t.FULL])
+  var m = version.trim().match(options.loose ? safeRe[t.LOOSE] : safeRe[t.FULL])
 
   if (!m) {
     throw new TypeError('Invalid Version: ' + version)
@@ -14538,6 +14578,7 @@ function Comparator (comp, options) {
     return new Comparator(comp, options)
   }
 
+  comp = comp.trim().split(/\s+/).join(' ')
   debug('comparator', comp, options)
   this.options = options
   this.loose = !!options.loose
@@ -14554,7 +14595,7 @@ function Comparator (comp, options) {
 
 var ANY = {}
 Comparator.prototype.parse = function (comp) {
-  var r = this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR]
+  var r = this.options.loose ? safeRe[t.COMPARATORLOOSE] : safeRe[t.COMPARATOR]
   var m = comp.match(r)
 
   if (!m) {
@@ -14678,9 +14719,16 @@ function Range (range, options) {
   this.loose = !!options.loose
   this.includePrerelease = !!options.includePrerelease
 
-  // First, split based on boolean or ||
+  // First reduce all whitespace as much as possible so we do not have to rely
+  // on potentially slow regexes like \s*. This is then stored and used for
+  // future error messages as well.
   this.raw = range
-  this.set = range.split(/\s*\|\|\s*/).map(function (range) {
+    .trim()
+    .split(/\s+/)
+    .join(' ')
+
+  // First, split based on boolean or ||
+  this.set = this.raw.split('||').map(function (range) {
     return this.parseRange(range.trim())
   }, this).filter(function (c) {
     // throw out any that are not relevant for whatever reason
@@ -14688,7 +14736,7 @@ function Range (range, options) {
   })
 
   if (!this.set.length) {
-    throw new TypeError('Invalid SemVer Range: ' + range)
+    throw new TypeError('Invalid SemVer Range: ' + this.raw)
   }
 
   this.format()
@@ -14707,20 +14755,19 @@ Range.prototype.toString = function () {
 
 Range.prototype.parseRange = function (range) {
   var loose = this.options.loose
-  range = range.trim()
   // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
-  var hr = loose ? re[t.HYPHENRANGELOOSE] : re[t.HYPHENRANGE]
+  var hr = loose ? safeRe[t.HYPHENRANGELOOSE] : safeRe[t.HYPHENRANGE]
   range = range.replace(hr, hyphenReplace)
   debug('hyphen replace', range)
   // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
-  range = range.replace(re[t.COMPARATORTRIM], comparatorTrimReplace)
-  debug('comparator trim', range, re[t.COMPARATORTRIM])
+  range = range.replace(safeRe[t.COMPARATORTRIM], comparatorTrimReplace)
+  debug('comparator trim', range, safeRe[t.COMPARATORTRIM])
 
   // `~ 1.2.3` => `~1.2.3`
-  range = range.replace(re[t.TILDETRIM], tildeTrimReplace)
+  range = range.replace(safeRe[t.TILDETRIM], tildeTrimReplace)
 
   // `^ 1.2.3` => `^1.2.3`
-  range = range.replace(re[t.CARETTRIM], caretTrimReplace)
+  range = range.replace(safeRe[t.CARETTRIM], caretTrimReplace)
 
   // normalize spaces
   range = range.split(/\s+/).join(' ')
@@ -14728,7 +14775,7 @@ Range.prototype.parseRange = function (range) {
   // At this point, the range is completely trimmed and
   // ready to be split into comparators.
 
-  var compRe = loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR]
+  var compRe = loose ? safeRe[t.COMPARATORLOOSE] : safeRe[t.COMPARATOR]
   var set = range.split(' ').map(function (comp) {
     return parseComparator(comp, this.options)
   }, this).join(' ').split(/\s+/)
@@ -14828,7 +14875,7 @@ function replaceTildes (comp, options) {
 }
 
 function replaceTilde (comp, options) {
-  var r = options.loose ? re[t.TILDELOOSE] : re[t.TILDE]
+  var r = options.loose ? safeRe[t.TILDELOOSE] : safeRe[t.TILDE]
   return comp.replace(r, function (_, M, m, p, pr) {
     debug('tilde', comp, _, M, m, p, pr)
     var ret
@@ -14869,7 +14916,7 @@ function replaceCarets (comp, options) {
 
 function replaceCaret (comp, options) {
   debug('caret', comp, options)
-  var r = options.loose ? re[t.CARETLOOSE] : re[t.CARET]
+  var r = options.loose ? safeRe[t.CARETLOOSE] : safeRe[t.CARET]
   return comp.replace(r, function (_, M, m, p, pr) {
     debug('caret', comp, _, M, m, p, pr)
     var ret
@@ -14928,7 +14975,7 @@ function replaceXRanges (comp, options) {
 
 function replaceXRange (comp, options) {
   comp = comp.trim()
-  var r = options.loose ? re[t.XRANGELOOSE] : re[t.XRANGE]
+  var r = options.loose ? safeRe[t.XRANGELOOSE] : safeRe[t.XRANGE]
   return comp.replace(r, function (ret, gtlt, M, m, p, pr) {
     debug('xRange', comp, ret, gtlt, M, m, p, pr)
     var xM = isX(M)
@@ -15003,7 +15050,7 @@ function replaceXRange (comp, options) {
 function replaceStars (comp, options) {
   debug('replaceStars', comp, options)
   // Looseness is ignored here.  star is always as loose as it gets!
-  return comp.trim().replace(re[t.STAR], '')
+  return comp.trim().replace(safeRe[t.STAR], '')
 }
 
 // This function is passed to string.replace(re[t.HYPHENRANGE])
@@ -15329,7 +15376,7 @@ function coerce (version, options) {
 
   var match = null
   if (!options.rtl) {
-    match = version.match(re[t.COERCE])
+    match = version.match(safeRe[t.COERCE])
   } else {
     // Find the right-most coercible string that does not share
     // a terminus with a more left-ward coercible string.
@@ -15340,17 +15387,17 @@ function coerce (version, options) {
     // Stop when we get a match that ends at the string end, since no
     // coercible string can be more right-ward without the same terminus.
     var next
-    while ((next = re[t.COERCERTL].exec(version)) &&
+    while ((next = safeRe[t.COERCERTL].exec(version)) &&
       (!match || match.index + match[0].length !== version.length)
     ) {
       if (!match ||
           next.index + next[0].length !== match.index + match[0].length) {
         match = next
       }
-      re[t.COERCERTL].lastIndex = next.index + next[1].length + next[2].length
+      safeRe[t.COERCERTL].lastIndex = next.index + next[1].length + next[2].length
     }
     // leave it in a clean state
-    re[t.COERCERTL].lastIndex = -1
+    safeRe[t.COERCERTL].lastIndex = -1
   }
 
   if (match === null) {
@@ -19590,8 +19637,6 @@ const external_node_process_namespaceObject = __WEBPACK_EXTERNAL_createRequire(i
 const external_node_buffer_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:buffer");
 ;// CONCATENATED MODULE: external "node:stream"
 const external_node_stream_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:stream");
-;// CONCATENATED MODULE: external "node:url"
-const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
 ;// CONCATENATED MODULE: external "node:http"
 const external_node_http_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:http");
 // EXTERNAL MODULE: external "events"
@@ -19708,6 +19753,8 @@ const timer = (request) => {
 };
 /* harmony default export */ const dist_source = (timer);
 
+;// CONCATENATED MODULE: external "node:url"
+const external_node_url_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:url");
 ;// CONCATENATED MODULE: external "node:crypto"
 const external_node_crypto_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:crypto");
 ;// CONCATENATED MODULE: ./node_modules/normalize-url/index.js
@@ -20791,13 +20838,13 @@ function timedOut(request, delays, options) {
             throw error;
         }
     });
-    if (typeof delays.request !== 'undefined') {
+    if (delays.request !== undefined) {
         const cancelTimeout = addTimeout(delays.request, timeoutHandler, 'request');
         once(request, 'response', (response) => {
             once(response, 'end', cancelTimeout);
         });
     }
-    if (typeof delays.socket !== 'undefined') {
+    if (delays.socket !== undefined) {
         const { socket } = delays;
         const socketTimeoutHandler = () => {
             timeoutHandler(socket, 'socket');
@@ -20810,17 +20857,17 @@ function timedOut(request, delays, options) {
             request.removeListener('timeout', socketTimeoutHandler);
         });
     }
-    const hasLookup = typeof delays.lookup !== 'undefined';
-    const hasConnect = typeof delays.connect !== 'undefined';
-    const hasSecureConnect = typeof delays.secureConnect !== 'undefined';
-    const hasSend = typeof delays.send !== 'undefined';
+    const hasLookup = delays.lookup !== undefined;
+    const hasConnect = delays.connect !== undefined;
+    const hasSecureConnect = delays.secureConnect !== undefined;
+    const hasSend = delays.send !== undefined;
     if (hasLookup || hasConnect || hasSecureConnect || hasSend) {
         once(request, 'socket', (socket) => {
             const { socketPath } = request;
             /* istanbul ignore next: hard to test */
             if (socket.connecting) {
                 const hasPath = Boolean(socketPath ?? external_node_net_namespaceObject.isIP(hostname ?? host ?? '') !== 0);
-                if (hasLookup && !hasPath && typeof socket.address().address === 'undefined') {
+                if (hasLookup && !hasPath && socket.address().address === undefined) {
                     const cancelTimeout = addTimeout(delays.lookup, timeoutHandler, 'lookup');
                     once(socket, 'lookup', cancelTimeout);
                 }
@@ -20858,13 +20905,13 @@ function timedOut(request, delays, options) {
             }
         });
     }
-    if (typeof delays.response !== 'undefined') {
+    if (delays.response !== undefined) {
         once(request, 'upload-complete', () => {
             const cancelTimeout = addTimeout(delays.response, timeoutHandler, 'response');
             once(request, 'response', cancelTimeout);
         });
     }
-    if (typeof delays.read !== 'undefined') {
+    if (delays.read !== undefined) {
         once(request, 'response', (response) => {
             const cancelTimeout = addTimeout(delays.read, timeoutHandler, 'read');
             once(response, 'end', cancelTimeout);
@@ -21465,7 +21512,6 @@ function parseLinkHeader(link) {
 
 
 
-
 // DO NOT use destructuring for `https.request` and `http.request` as it's not compatible with `nock`.
 
 
@@ -21630,7 +21676,7 @@ const defaultInternals = {
             const next = parsed.find(entry => entry.parameters.rel === 'next' || entry.parameters.rel === '"next"');
             if (next) {
                 return {
-                    url: new external_node_url_namespaceObject.URL(next.reference, response.url),
+                    url: new URL(next.reference, response.url),
                 };
             }
             return false;
@@ -21645,7 +21691,7 @@ const defaultInternals = {
     setHost: true,
     maxHeaderSize: undefined,
     signal: undefined,
-    enableUnixSockets: true,
+    enableUnixSockets: false,
 };
 const cloneInternals = (internals) => {
     const { hooks, retry } = internals;
@@ -21671,7 +21717,7 @@ const cloneInternals = (internals) => {
             beforeRetry: [...hooks.beforeRetry],
             afterResponse: [...hooks.afterResponse],
         },
-        searchParams: internals.searchParams ? new external_node_url_namespaceObject.URLSearchParams(internals.searchParams) : undefined,
+        searchParams: internals.searchParams ? new URLSearchParams(internals.searchParams) : undefined,
         pagination: { ...internals.pagination },
     };
     if (result.url !== undefined) {
@@ -21872,7 +21918,12 @@ class Options {
                     throw new Error(`Unexpected option: ${key}`);
                 }
                 // @ts-expect-error Type 'unknown' is not assignable to type 'never'.
-                this[key] = options[key];
+                const value = options[key];
+                if (value === undefined) {
+                    continue;
+                }
+                // @ts-expect-error Type 'unknown' is not assignable to type 'never'.
+                this[key] = value;
                 push = true;
             }
             if (push) {
@@ -22153,7 +22204,7 @@ class Options {
             throw new Error('`url` must not start with a slash');
         }
         const urlString = `${this.prefixUrl}${value.toString()}`;
-        const url = new external_node_url_namespaceObject.URL(urlString);
+        const url = new URL(urlString);
         this._internals.url = url;
         if (url.protocol === 'unix:') {
             url.href = `http://unix${url.pathname}${url.search}`;
@@ -22228,8 +22279,6 @@ class Options {
     /**
     You can abort the `request` using [`AbortController`](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
 
-    *Requires Node.js 16 or later.*
-
     @example
     ```
     import got from 'got';
@@ -22245,11 +22294,9 @@ class Options {
     }, 100);
     ```
     */
-    // TODO: Replace `any` with `AbortSignal` when targeting Node 16.
     get signal() {
         return this._internals.signal;
     }
-    // TODO: Replace `any` with `AbortSignal` when targeting Node 16.
     set signal(value) {
         assert.object(value);
         this._internals.signal = value;
@@ -22290,7 +22337,7 @@ class Options {
             return this._internals.url.searchParams;
         }
         if (this._internals.searchParams === undefined) {
-            this._internals.searchParams = new external_node_url_namespaceObject.URLSearchParams();
+            this._internals.searchParams = new URLSearchParams();
         }
         return this._internals.searchParams;
     }
@@ -22307,14 +22354,14 @@ class Options {
         const searchParameters = this.searchParams;
         let updated;
         if (dist.string(value)) {
-            updated = new external_node_url_namespaceObject.URLSearchParams(value);
+            updated = new URLSearchParams(value);
         }
-        else if (value instanceof external_node_url_namespaceObject.URLSearchParams) {
+        else if (value instanceof URLSearchParams) {
             updated = value;
         }
         else {
             validateSearchParameters(value);
-            updated = new external_node_url_namespaceObject.URLSearchParams();
+            updated = new URLSearchParams();
             // eslint-disable-next-line guard-for-in
             for (const key in value) {
                 const entry = value[key];
@@ -23192,7 +23239,7 @@ function isUnixSocketURL(url) {
 
 
 
-
+const { buffer: getStreamAsBuffer } = get_stream;
 const supportsBrotli = dist.string(external_node_process_namespaceObject.versions.brotli);
 const methodsWithoutBody = new Set(['GET', 'HEAD']);
 const cacheableStore = new WeakableMap();
@@ -23382,8 +23429,8 @@ class Request extends external_node_stream_namespaceObject.Duplex {
         this.redirectUrls = [];
         this.retryCount = 0;
         this._stopRetry = core_noop;
-        this.on('pipe', source => {
-            if (source.headers) {
+        this.on('pipe', (source) => {
+            if (source?.headers) {
                 Object.assign(this.options.headers, source.headers);
             }
         });
@@ -23439,7 +23486,7 @@ class Request extends external_node_stream_namespaceObject.Duplex {
             else {
                 this.options.signal.addEventListener('abort', abort);
                 this._removeListeners = () => {
-                    this.options.signal.removeEventListener('abort', abort);
+                    this.options.signal?.removeEventListener('abort', abort);
                 };
             }
         }
@@ -23705,7 +23752,7 @@ class Request extends external_node_stream_namespaceObject.Duplex {
                 }
                 const { form } = options;
                 options.form = undefined;
-                options.body = (new external_node_url_namespaceObject.URLSearchParams(form)).toString();
+                options.body = (new URLSearchParams(form)).toString();
             }
             else {
                 if (noContentType) {
@@ -23828,7 +23875,7 @@ class Request extends external_node_stream_namespaceObject.Duplex {
             try {
                 // We need this in order to support UTF-8
                 const redirectBuffer = external_node_buffer_namespaceObject.Buffer.from(response.headers.location, 'binary').toString();
-                const redirectUrl = new external_node_url_namespaceObject.URL(redirectBuffer, url);
+                const redirectUrl = new URL(redirectBuffer, url);
                 if (!isUnixSocketURL(url) && isUnixSocketURL(redirectUrl)) {
                     this._beforeError(new RequestError('Cannot redirect to UNIX socket', {}, this));
                     return;
@@ -23921,7 +23968,10 @@ class Request extends external_node_stream_namespaceObject.Duplex {
         }
         try {
             // Errors are emitted via the `error` event
-            const rawBody = await (0,get_stream.buffer)(from);
+            const rawBody = await getStreamAsBuffer(from);
+            // TODO: Switch to this:
+            // let rawBody = await from.toArray();
+            // rawBody = Buffer.concat(rawBody);
             // On retry Request is destroyed with no error, therefore the above will successfully resolve.
             // So in order to check if this was really successfull, we need to check if it has been properly ended.
             if (!this.isAborted) {
@@ -24015,7 +24065,6 @@ class Request extends external_node_stream_namespaceObject.Duplex {
                     // We only need to implement the error handler in order to support HTTP2 caching.
                     // The result will be a promise anyway.
                     // @ts-expect-error ignore
-                    // eslint-disable-next-line @typescript-eslint/promise-function-async
                     result.once = (event, handler) => {
                         if (event === 'error') {
                             (async () => {
